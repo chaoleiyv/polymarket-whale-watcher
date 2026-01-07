@@ -1,0 +1,12 @@
+# Core dependencies
+httpx>=0.27.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# AI/LLM (Google Gemini)
+google-genai>=1.0.0
+
+# CLI and formatting
+rich>=13.0.0
+typer>=0.9.0
