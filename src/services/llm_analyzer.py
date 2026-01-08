@@ -13,6 +13,7 @@ from src.config import get_settings
 from src.models.trade import WhaleTrade
 from src.models.decision import LLMDecision, TradeRecommendation, TradeAction, TraderCredibility
 from src.services.anomaly_detector import AnomalyDetector
+from src.services.report_history import ReportHistoryService
 from src.prompts.whale_analyzer import WhaleAnalyzerPrompts
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,15 @@ class LLMAnalyzer:
 
         self.anomaly_detector = AnomalyDetector()
         self.prompts = WhaleAnalyzerPrompts()
+        self.report_history = ReportHistoryService()
+
+        # Track the number of historical reports used in the last analysis
+        self._last_historical_report_count = 0
+
+    @property
+    def last_historical_report_count(self) -> int:
+        """Get the number of historical reports used in the last analysis."""
+        return self._last_historical_report_count
 
     def _extract_json_from_response(self, response: str) -> Optional[dict]:
         """
@@ -132,9 +142,21 @@ class LLMAnalyzer:
         # Format trade context for LLM
         trade_context = self.anomaly_detector.format_for_llm(whale_trade)
 
+        # Find and format historical reports for the same market
+        historical_context = ""
+        historical_reports = self.report_history.find_historical_reports(
+            whale_trade.market_question,
+            similarity_threshold=0.5,
+            max_reports=5,
+        )
+        self._last_historical_report_count = len(historical_reports)
+        if historical_reports:
+            historical_context = self.report_history.format_historical_context(historical_reports)
+            logger.info(f"Found {len(historical_reports)} historical reports for market: {whale_trade.market_question}")
+
         # Build prompt (Gemini uses single prompt with system instruction)
         system_prompt = self.prompts.system_prompt()
-        user_prompt = self.prompts.analyze_whale_trade(trade_context)
+        user_prompt = self.prompts.analyze_whale_trade(trade_context, historical_context)
         full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
 
         try:
@@ -187,13 +209,19 @@ class LLMAnalyzer:
                 ),
             )
 
-    def format_full_report(self, whale_trade: WhaleTrade, decision: LLMDecision) -> str:
+    def format_full_report(
+        self,
+        whale_trade: WhaleTrade,
+        decision: LLMDecision,
+        historical_report_count: int = 0,
+    ) -> str:
         """
         Format a complete analysis report with trade info, analysis, and decision.
 
         Args:
             whale_trade: The whale trade
             decision: The LLM decision
+            historical_report_count: Number of historical reports used in analysis
 
         Returns:
             Formatted report string
@@ -242,12 +270,17 @@ class LLMAnalyzer:
             pnl_str = f"${tr.pnl:,.2f}" if tr.pnl else "N/A"
             trader_ranking_str = f"| **交易者排名** | {rank_str} (PnL: {pnl_str}) |"
 
+        # Historical reports info
+        historical_info = ""
+        if historical_report_count > 0:
+            historical_info = f"\n**参考历史报告**: {historical_report_count} 份 (已综合分析)"
+
         report = f"""
 {'='*70}
 # 🐋 鲸鱼交易分析报告
 {'='*70}
 
-**生成时间**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
+**生成时间**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC{historical_info}
 
 ## 交易摘要
 

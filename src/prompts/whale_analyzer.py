@@ -69,22 +69,32 @@ class WhaleAnalyzerPrompts:
 **重要原则**：
 - **务必使用 Google Search！** 不要仅依赖你的历史知识
 - **重视交易者历史记录！** 这是判断交易者专业性的关键依据
+- **如果有历史报告，务必结合历史报告进行综合分析！** 这能帮助你了解该市场的交易模式
 - 关注过去24-72小时的最新动态
 - 如果搜索不到支持信息，内幕交易可能性应该降低
 - 信心不足时建议观望（HOLD）"""
 
     @staticmethod
-    def analyze_whale_trade(trade_context: str) -> str:
+    def analyze_whale_trade(trade_context: str, historical_context: str = "") -> str:
         """
         Get the prompt for analyzing a whale trade.
 
         Args:
             trade_context: Formatted trade context from AnomalyDetector
+            historical_context: Formatted historical reports context (optional)
 
         Returns:
             Complete prompt for LLM
         """
+        history_section = ""
+        if historical_context:
+            history_section = f"""
+{historical_context}
+
+---
+"""
         return f"""{trade_context}
+{history_section}
 
 ---
 
@@ -139,6 +149,27 @@ class WhaleAnalyzerPrompts:
 - **关键问题**：搜索到的最新信息是否支持这笔交易的方向？
 - 这些信息是否已被市场完全定价？
 - 如果存在信息差，幅度有多大？
+
+---
+
+## 第三点五步：历史报告综合分析（如有历史报告）
+
+如果上文提供了历史报告，请进行以下分析：
+
+### 3.5.1 交易方向对比
+- 历史报告中的交易方向（BUY/SELL）与当前交易是否一致？
+- 如果方向一致，这可能表明多个交易者对同一结果有信心
+- 如果方向相反，需要分析原因（时间变化、新信息、不同交易者的判断）
+
+### 3.5.2 历史内幕交易评估
+- 历史报告对内幕交易的判断如何？
+- 如果历史报告也认为是内幕交易，这增强了当前交易的可信度
+- 结合历史报告的证据和当前搜索结果进行综合判断
+
+### 3.5.3 趋势演变分析
+- 该市场的交易模式是否有变化？
+- 价格从历史报告到现在有何变动？
+- 鲸鱼交易的频率和规模是否在增加？
 
 ---
 

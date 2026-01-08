@@ -235,8 +235,9 @@ class AnomalyDetector:
 - **隐含概率**: 交易者认为结果发生的概率约为 {context['implied_probability']:.2%}
 - **信心程度**: {context['conviction_level']}
 {ranking_str}{history_str}
-### 市场状态
+### 市场信息
 - **市场问题**: {context['market_question']}
+- **市场描述**: {whale_trade.market_description or 'N/A'}
 - **市场状态**: {context['market_state']}
 - **当前赔率**:
 {prices_str}

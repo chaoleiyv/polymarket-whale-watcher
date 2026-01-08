@@ -105,7 +105,11 @@ class WhaleWatcher:
         decision = await self.llm_analyzer.analyze_whale_trade(whale_trade)
 
         # Print the full report (includes analysis + decision summary)
-        full_report = self.llm_analyzer.format_full_report(whale_trade, decision)
+        full_report = self.llm_analyzer.format_full_report(
+            whale_trade,
+            decision,
+            historical_report_count=self.llm_analyzer.last_historical_report_count,
+        )
         print(full_report)
 
         # Save report to file
