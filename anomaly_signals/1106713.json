@@ -1,0 +1,279 @@
+[
+  {
+    "id": "0xa8b744720006da3c08b4dc8a61a5ce930542f550fcf8d27380ae898de636799d_0x955fceb23568c8fcfd55c442807b09788cc8aa8b48736f30e6a369a8738414c2",
+    "market_id": "1106713",
+    "market_question": "Khamenei out as Supreme Leader of Iran by January 31?",
+    "market_slug": "khamenei-out-as-supreme-leader-of-iran-by-january-31",
+    "transaction_hash": "0x955fceb23568c8fcfd55c442807b09788cc8aa8b48736f30e6a369a8738414c2",
+    "trade_timestamp": 1767949964,
+    "trade_side": "SELL",
+    "trade_price": 0.83,
+    "trade_size_usd": 29642.852399999996,
+    "trade_outcome": "No",
+    "trader_wallet": "0x40e1d00d3a43af1c4f215bd7a1039cc792ad973f",
+    "trader_ranking": {
+      "rank": 1719705,
+      "pnl": -381.652719954904,
+      "volume": 1738.360196,
+      "user_name": "0x40e1D00D3A43aF1C4f215bD7A1039cc792AD973f-1757776033081",
+      "profile_image": "",
+      "verified": false,
+      "time_period": "ALL"
+    },
+    "trader_history": {
+      "total_trades": 6,
+      "total_volume": 30799.999989999993,
+      "avg_trade_size": 5133.333331666666,
+      "win_rate": null,
+      "recent_markets": [
+        "Fed decreases interest rates by 25 bps after Octob",
+        "Bitcoin all time high by September 30?",
+        "Khamenei out as Supreme Leader of Iran by January ",
+        "Yankees vs. Red Sox",
+        "Khamenei out as Supreme Leader of Iran by March 31"
+      ],
+      "large_trades_count": 1,
+      "recent_trades": [
+        {
+          "side": "BUY",
+          "usdc_size": 29999.999997999996,
+          "price": 0.83999999999776,
+          "title": "Khamenei out as Supreme Leader of Iran by January 31?",
+          "timestamp": 1767949332
+        }
+      ]
+    },
+    "insider_trading_likelihood": 0.65,
+    "detected_at": "2026-01-09T09:13:28.727218"
+  },
+  {
+    "id": "0xa8b744720006da3c08b4dc8a61a5ce930542f550fcf8d27380ae898de636799d_0xab292746c06e85950b015dc223c5fc6a9a2a314cd607830e3b27739760b33227",
+    "market_id": "1106713",
+    "market_question": "Khamenei out as Supreme Leader of Iran by January 31?",
+    "market_slug": "khamenei-out-as-supreme-leader-of-iran-by-january-31",
+    "transaction_hash": "0xab292746c06e85950b015dc223c5fc6a9a2a314cd607830e3b27739760b33227",
+    "trade_timestamp": 1767956878,
+    "trade_side": "SELL",
+    "trade_price": 0.82,
+    "trade_size_usd": 8200.0,
+    "trade_outcome": "No",
+    "trader_wallet": "0xd748c701ad93cfec32a3420e10f3b08e68612125",
+    "trader_ranking": {
+      "rank": 510,
+      "pnl": 182257.91886294755,
+      "volume": 11887811.308367003,
+      "user_name": "TealV",
+      "profile_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-3144810-9697d911-553c-4817-bf88-6ff0882d3540.jpeg",
+      "verified": false,
+      "time_period": "ALL"
+    },
+    "trader_history": {
+      "total_trades": 100,
+      "total_volume": 408961.4419200001,
+      "avg_trade_size": 4089.614419200001,
+      "win_rate": null,
+      "recent_markets": [
+        "Will NVIDIA be the largest company in the world by",
+        "Khamenei out as Supreme Leader of Iran by June 30?",
+        "Foreign intervention in Gaza in 2025?",
+        "Will the Gävle Goat burn in 2025?",
+        "Will Trump acquire Greenland before 2027?",
+        "Will Eleven die in \"Stranger Things: Season 5\"?",
+        "Trump invokes War Powers against Venezuela by Janu",
+        "Trump cabinet member out by December 31, 2025?",
+        "US x Venezuela military engagement by December 31?",
+        "Will turnout in the 2025 Honduran general election"
+      ],
+      "large_trades_count": 20,
+      "recent_trades": [
+        {
+          "side": "SELL",
+          "usdc_size": 45268.4932,
+          "price": 0.98,
+          "title": "Will Trump release the Epstein files by December 19?",
+          "timestamp": 1766178477
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 39920.0,
+          "price": 0.998,
+          "title": "Will Stephen Colbert be named in newly released Epstein files?",
+          "timestamp": 1766688165
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 29520.0,
+          "price": 0.984,
+          "title": "New \"Stranger Things\" episode released by Wednesday? ",
+          "timestamp": 1767803241
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 19960.0,
+          "price": 0.998,
+          "title": "Will Eleven die in \"Stranger Things: Season 5\"?",
+          "timestamp": 1767314171
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 19960.0,
+          "price": 0.998,
+          "title": "Will Stephen Colbert be named in newly released Epstein files?",
+          "timestamp": 1766689579
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 11927.34791,
+          "price": 0.9939456591666667,
+          "title": "Will A Minecraft Movie be the top grossing movie of 2025?",
+          "timestamp": 1766410745
+        },
+        {
+          "side": "SELL",
+          "usdc_size": 11173.26266,
+          "price": 0.79809019,
+          "title": "Epstein client list released in 2025?",
+          "timestamp": 1766559139
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 10624.4499,
+          "price": 0.70829666,
+          "title": "Will Trump release the Epstein files by December 19?",
+          "timestamp": 1766148320
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 10349.86938,
+          "price": 0.983,
+          "title": "New \"Stranger Things\" episode released by Wednesday? ",
+          "timestamp": 1767803001
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 9946.65582,
+          "price": 0.994665582,
+          "title": "Will the Gävle Goat burn in 2025?",
+          "timestamp": 1767027749
+        }
+      ]
+    },
+    "insider_trading_likelihood": 0.65,
+    "detected_at": "2026-01-09T11:08:15.448894"
+  },
+  {
+    "id": "0xa8b744720006da3c08b4dc8a61a5ce930542f550fcf8d27380ae898de636799d_0x2a7068f3083b1dc2eab115def22b76904e9287050455ea1a69f712cf47ad9330",
+    "market_id": "1106713",
+    "market_question": "Khamenei out as Supreme Leader of Iran by January 31?",
+    "market_slug": "khamenei-out-as-supreme-leader-of-iran-by-january-31",
+    "transaction_hash": "0x2a7068f3083b1dc2eab115def22b76904e9287050455ea1a69f712cf47ad9330",
+    "trade_timestamp": 1767959004,
+    "trade_side": "SELL",
+    "trade_price": 0.8065248131702447,
+    "trade_size_usd": 33390.1192,
+    "trade_outcome": "No",
+    "trader_wallet": "0xe1055b4b4c1342281bf5cba7d18074f8126f9cb3",
+    "trader_ranking": {
+      "rank": 429,
+      "pnl": 219496.48071243853,
+      "volume": 3453020.483904001,
+      "user_name": "Bammer",
+      "profile_image": "",
+      "verified": false,
+      "time_period": "ALL"
+    },
+    "trader_history": {
+      "total_trades": 100,
+      "total_volume": 649739.3363200001,
+      "avg_trade_size": 6497.393363200001,
+      "win_rate": null,
+      "recent_markets": [
+        "No change in Fed interest rates after January 2026",
+        "Fed decreases interest rates by 50+ bps after Dece",
+        "Will Polymarket US go live in 2025?",
+        "Trump declassifies UFO files in 2025?",
+        "Will 'Wicked: For Good' have the second best domes",
+        "Will Ethereum reach $4,000 in November?",
+        "US x Venezuela military engagement by December 31?",
+        "Maduro mugshot released by January 9?",
+        "Will Artificial Intelligence be TIME's Person of t",
+        "No change in Fed interest rates after December 202"
+      ],
+      "large_trades_count": 22,
+      "recent_trades": [
+        {
+          "side": "BUY",
+          "usdc_size": 116845.4806,
+          "price": 0.8988113892307692,
+          "title": "Will Trump release the Epstein files by December 19?",
+          "timestamp": 1766172043
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 109450.0,
+          "price": 0.995,
+          "title": "Fed decreases interest rates by 50+ bps after December 2025 meeting?",
+          "timestamp": 1765319832
+        },
+        {
+          "side": "SELL",
+          "usdc_size": 72676.25748,
+          "price": 0.996,
+          "title": "Will Trump release the Epstein files by December 19?",
+          "timestamp": 1766185299
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 55916.064,
+          "price": 0.992,
+          "title": "Will Polymarket US go live in 2025?",
+          "timestamp": 1764892037
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 44540.236300000004,
+          "price": 0.9897830288888889,
+          "title": "Will Catalin Drula be the next Mayor of Bucharest?",
+          "timestamp": 1765128697
+        },
+        {
+          "side": "SELL",
+          "usdc_size": 25680.97684,
+          "price": 0.8581559251441149,
+          "title": "TikTok sale announced in 2025?",
+          "timestamp": 1766251103
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 16877.085170000002,
+          "price": 0.7522695752018397,
+          "title": "TikTok sale announced in 2025?",
+          "timestamp": 1766342940
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 14100.0,
+          "price": 0.94,
+          "title": "Will Catalin Drula be the next Mayor of Bucharest?",
+          "timestamp": 1764871983
+        },
+        {
+          "side": "SELL",
+          "usdc_size": 12337.11,
+          "price": 0.822474,
+          "title": "TikTok sale announced in 2025?",
+          "timestamp": 1766397601
+        },
+        {
+          "side": "BUY",
+          "usdc_size": 12089.192500000001,
+          "price": 0.8503628879380383,
+          "title": "Israel strikes Iran by January 16, 2026?",
+          "timestamp": 1767804231
+        }
+      ]
+    },
+    "insider_trading_likelihood": 0.65,
+    "detected_at": "2026-01-09T11:44:01.365212"
+  }
+]

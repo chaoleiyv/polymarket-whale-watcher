@@ -12,8 +12,9 @@ from google.genai import types
 from src.config import get_settings
 from src.models.trade import WhaleTrade
 from src.models.decision import LLMDecision, TradeRecommendation, TradeAction, TraderCredibility
+from src.models.anomaly_signal import AnomalySignal
 from src.services.anomaly_detector import AnomalyDetector
-from src.services.report_history import ReportHistoryService
+from src.services.anomaly_history import AnomalyHistoryService
 from src.prompts.whale_analyzer import WhaleAnalyzerPrompts
 
 logger = logging.getLogger(__name__)
@@ -36,15 +37,15 @@ class LLMAnalyzer:
 
         self.anomaly_detector = AnomalyDetector()
         self.prompts = WhaleAnalyzerPrompts()
-        self.report_history = ReportHistoryService()
+        self.anomaly_history = AnomalyHistoryService()
 
-        # Track the number of historical reports used in the last analysis
-        self._last_historical_report_count = 0
+        # Track the number of historical signals used in the last analysis
+        self._last_historical_signal_count = 0
 
     @property
-    def last_historical_report_count(self) -> int:
-        """Get the number of historical reports used in the last analysis."""
-        return self._last_historical_report_count
+    def last_historical_signal_count(self) -> int:
+        """Get the number of historical anomaly signals used in the last analysis."""
+        return self._last_historical_signal_count
 
     def _extract_json_from_response(self, response: str) -> Optional[dict]:
         """
@@ -129,6 +130,57 @@ class LLMAnalyzer:
             insider_evidence=insider_evidence,
         )
 
+    def _store_anomaly_signal_if_qualified(
+        self,
+        whale_trade: WhaleTrade,
+        decision: LLMDecision,
+    ) -> None:
+        """
+        Store an anomaly signal if the insider trading likelihood meets threshold.
+
+        Only signals with insider_trading_likelihood >= 0.4 are stored.
+
+        Args:
+            whale_trade: The whale trade
+            decision: The LLM decision
+        """
+        rec = decision.recommendation
+
+        if not self.anomaly_history.should_store_signal(rec.insider_trading_likelihood):
+            logger.debug(
+                f"Signal not stored: insider likelihood {rec.insider_trading_likelihood:.2f} "
+                f"below threshold"
+            )
+            return
+
+        # Create anomaly signal from whale trade
+        # Store insider_trading_likelihood for sorting, but it won't be shown to LLM
+        signal = AnomalySignal(
+            id=whale_trade.id,
+            market_id=whale_trade.market_id,
+            market_question=whale_trade.market_question,
+            market_slug=whale_trade.trade.slug,
+            transaction_hash=whale_trade.trade.transaction_hash,
+            trade_timestamp=whale_trade.trade.timestamp,
+            trade_side=whale_trade.trade.side,
+            trade_price=whale_trade.trade.price,
+            trade_size_usd=whale_trade.trade.usdc_size,
+            trade_outcome=whale_trade.trade.outcome,
+            trader_wallet=whale_trade.trade.proxy_wallet,
+            trader_ranking=whale_trade.trader_ranking,
+            trader_history=whale_trade.trader_history,
+            insider_trading_likelihood=rec.insider_trading_likelihood,
+            detected_at=whale_trade.detected_at,
+        )
+
+        # Store the signal
+        stored = self.anomaly_history.store_signal(signal)
+        if stored:
+            logger.info(
+                f"Stored anomaly signal: {whale_trade.market_question[:50]}... "
+                f"insider_likelihood={rec.insider_trading_likelihood:.0%}"
+            )
+
     async def analyze_whale_trade(self, whale_trade: WhaleTrade) -> LLMDecision:
         """
         Analyze a whale trade using LLM.
@@ -142,17 +194,18 @@ class LLMAnalyzer:
         # Format trade context for LLM
         trade_context = self.anomaly_detector.format_for_llm(whale_trade)
 
-        # Find and format historical reports for the same market
+        # Find and format historical anomaly signals for the same market
+        # Get top 5 most recent + top 5 highest insider likelihood, deduplicated
         historical_context = ""
-        historical_reports = self.report_history.find_historical_reports(
-            whale_trade.market_question,
-            similarity_threshold=0.5,
-            max_reports=5,
+        historical_signals = self.anomaly_history.get_signals_for_market(
+            whale_trade.market_id,
+            top_recent=5,
+            top_likelihood=5,
         )
-        self._last_historical_report_count = len(historical_reports)
-        if historical_reports:
-            historical_context = self.report_history.format_historical_context(historical_reports)
-            logger.info(f"Found {len(historical_reports)} historical reports for market: {whale_trade.market_question}")
+        self._last_historical_signal_count = len(historical_signals)
+        if historical_signals:
+            historical_context = self.anomaly_history.format_historical_signals_context(historical_signals)
+            logger.info(f"Found {len(historical_signals)} historical anomaly signals for market: {whale_trade.market_question}")
 
         # Build prompt (Gemini uses single prompt with system instruction)
         system_prompt = self.prompts.system_prompt()
@@ -187,12 +240,17 @@ class LLMAnalyzer:
                     reasoning="Failed to parse LLM response",
                 )
 
-            return LLMDecision(
+            decision = LLMDecision(
                 whale_trade_id=whale_trade.id,
                 market_id=whale_trade.market_id,
                 analysis=analysis_text,
                 recommendation=recommendation,
             )
+
+            # Store anomaly signal if insider trading likelihood >= 0.4
+            self._store_anomaly_signal_if_qualified(whale_trade, decision)
+
+            return decision
 
         except Exception as e:
             logger.error(f"Error calling LLM: {e}")
@@ -213,7 +271,7 @@ class LLMAnalyzer:
         self,
         whale_trade: WhaleTrade,
         decision: LLMDecision,
-        historical_report_count: int = 0,
+        historical_signal_count: int = 0,
     ) -> str:
         """
         Format a complete analysis report with trade info, analysis, and decision.
@@ -221,7 +279,7 @@ class LLMAnalyzer:
         Args:
             whale_trade: The whale trade
             decision: The LLM decision
-            historical_report_count: Number of historical reports used in analysis
+            historical_signal_count: Number of historical anomaly signals used in analysis
 
         Returns:
             Formatted report string
@@ -270,10 +328,10 @@ class LLMAnalyzer:
             pnl_str = f"${tr.pnl:,.2f}" if tr.pnl else "N/A"
             trader_ranking_str = f"| **交易者排名** | {rank_str} (PnL: {pnl_str}) |"
 
-        # Historical reports info
+        # Historical signals info
         historical_info = ""
-        if historical_report_count > 0:
-            historical_info = f"\n**参考历史报告**: {historical_report_count} 份 (已综合分析)"
+        if historical_signal_count > 0:
+            historical_info = f"\n**参考历史异常信号**: {historical_signal_count} 笔 (已综合分析)"
 
         report = f"""
 {'='*70}

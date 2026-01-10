@@ -108,7 +108,7 @@ class WhaleWatcher:
         full_report = self.llm_analyzer.format_full_report(
             whale_trade,
             decision,
-            historical_report_count=self.llm_analyzer.last_historical_report_count,
+            historical_signal_count=self.llm_analyzer.last_historical_signal_count,
         )
         print(full_report)
 

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "0x23fd2b26c4e095465ba0d2ebce8d5eda57009ddc59aad8b68ab19ca968b41eed_0x4dcea785c210d8158b7da8cd6c3cd38e563c9a5236d860cf14dd9ac90596a361",
+    "market_id": "994900",
+    "market_question": "Israel strikes Iran by January 31, 2026?",
+    "market_slug": "israel-strikes-iran-by-january-31-2026-894-994-453",
+    "transaction_hash": "0x4dcea785c210d8158b7da8cd6c3cd38e563c9a5236d860cf14dd9ac90596a361",
+    "trade_timestamp": 1767953152,
+    "trade_side": "BUY",
+    "trade_price": 0.36,
+    "trade_size_usd": 7200.0,
+    "trade_outcome": "Yes",
+    "trader_wallet": "0x3e54b40e183b6d4b213006c20e38ee578500a908",
+    "trader_ranking": null,
+    "trader_history": {
+      "total_trades": 3,
+      "total_volume": 5607.64,
+      "avg_trade_size": 1869.2133333333334,
+      "win_rate": null,
+      "recent_markets": [
+        "Israel strikes Iran by January 31, 2026?"
+      ],
+      "large_trades_count": 0,
+      "recent_trades": []
+    },
+    "insider_trading_likelihood": 0.6,
+    "detected_at": "2026-01-09T10:06:02.277652"
+  }
+]
