@@ -33,10 +33,10 @@ class TradeRecommendation(BaseModel):
     suggested_size_percent: float = Field(default=0.1, ge=0.0, le=1.0)  # % of balance
     reasoning: str = ""
 
-    # Insider trading assessment fields
-    insider_trading_likelihood: float = Field(default=0.0, ge=0.0, le=1.0)  # 0-1 likelihood
+    # Information asymmetry assessment fields
+    information_asymmetry_score: float = Field(default=0.0, ge=0.0, le=1.0)  # 0-1 score
     trader_credibility: TraderCredibility = TraderCredibility.UNKNOWN
-    insider_evidence: str = ""  # Evidence supporting insider trading assessment
+    insider_evidence: str = ""  # Evidence supporting information asymmetry assessment
 
 
 class LLMDecision(BaseModel):

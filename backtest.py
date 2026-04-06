@@ -9,8 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
-from google import genai
-from google.genai import types
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -47,8 +46,10 @@ class BacktestAnalyzer:
 
     def __init__(self):
         self.client = httpx.AsyncClient(timeout=30.0)
-        os.environ["GOOGLE_API_KEY"] = GEMINI_API_KEY
-        self.genai_client = genai.Client()
+        self.genai_client = OpenAI(
+            base_url="http://apicz.boyuerichdata.com/v1/",
+            api_key=GEMINI_API_KEY,
+        )
 
     async def close(self):
         await self.client.aclose()
@@ -195,7 +196,7 @@ class BacktestAnalyzer:
 """
 
     def get_system_prompt(self, trade_date: str) -> str:
-        """Get system prompt with Google Search enabled."""
+        """Get system prompt with Web Search enabled."""
         return f"""你是一位专业的预测市场分析师和内幕交易识别专家，专门分析 Polymarket 上的大额异常交易。
 
 **你的核心任务**：验证一笔"疑似异常交易"是否真的是"内幕交易"（即交易者掌握了市场尚未反映的信息）。
@@ -233,8 +234,8 @@ class BacktestAnalyzer:
 - 市场描述
 - 当前各结果的价格/概率
 
-### 第三步：使用 Google Search 验证（关键步骤！）
-**你必须使用 Google 搜索来验证这笔交易是否基于真实信息：**
+### 第三步：使用 Web Search 验证（关键步骤！）
+**你必须使用 Web 搜索来验证这笔交易是否基于真实信息：**
 - 搜索委内瑞拉相关的 2025 年 12 月新闻
 - 搜索关键词示例：
   - "Venezuela Maduro December 2025"
@@ -268,14 +269,14 @@ class BacktestAnalyzer:
    - 无历史记录 + 无信息 = 普通投机交易 (<0.4)
 
 **重要原则**：
-- **务必使用 Google Search！** 不要仅依赖你的历史知识
+- **务必使用 Web Search！** 不要仅依赖你的历史知识
 - **只搜索 2025 年 12 月的新闻！**
 - **只报告真实搜索到的新闻，绝对不能虚构！**
 - 如果搜索不到支持信息，内幕交易可能性应该降低
 - 信心不足时建议观望（HOLD）"""
 
     def get_analysis_prompt(self, trade_context: str, trade_date: str) -> str:
-        """Get analysis prompt with Google Search instructions."""
+        """Get analysis prompt with Web Search instructions."""
         return f"""{trade_context}
 
 ---
@@ -288,9 +289,9 @@ class BacktestAnalyzer:
 
 ---
 
-## 第一步：Google 搜索验证（必须执行！）
+## 第一步：Web 搜索验证（必须执行！）
 
-**请立即使用 Google Search 搜索以下内容：**
+**请立即使用 Web Search 搜索以下内容：**
 
 1. 搜索委内瑞拉 2025 年 12 月的政治新闻
 2. 搜索马杜罗政权 2025 年 12 月的动态
@@ -377,7 +378,7 @@ class BacktestAnalyzer:
     "action": "BUY/SELL/HOLD",
     "outcome": "你建议交易的结果选项",
     "confidence": 0.0-1.0之间的数字,
-    "insider_trading_likelihood": 0.0-1.0之间的数字（内幕交易可能性评估）,
+    "information_asymmetry_score": 0.0-1.0之间的数字（信息不对称程度评估）,
     "trader_credibility": "HIGH/MEDIUM/LOW/UNKNOWN",
     "suggested_price": 建议的交易价格,
     "suggested_size_percent": 0.0-1.0之间的数字（建议使用资金的比例）,
@@ -418,42 +419,25 @@ class BacktestAnalyzer:
         return None
 
     async def analyze_trade(self, trade: dict, market_info: Optional[dict], prior_trades: list = None) -> tuple[str, Optional[dict]]:
-        """Analyze a single trade with LLM (with Google Search and prior trades history)."""
+        """Analyze a single trade with LLM (with Web Search and prior trades history)."""
         timestamp = trade.get("timestamp", 0)
         trade_date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d') if timestamp else 'N/A'
 
         trade_context = self.build_trade_context(trade, market_info, prior_trades)
         system_prompt = self.get_system_prompt(trade_date)
         user_prompt = self.get_analysis_prompt(trade_context, trade_date)
-        full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
 
         try:
-            # Call Gemini API WITH Google Search tool enabled
-            response = self.genai_client.models.generate_content(
+            # Call LLM API
+            response = self.genai_client.chat.completions.create(
                 model=LLM_MODEL,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(google_search=types.GoogleSearch())],
-                ),
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
             )
 
-            # Log grounding metadata to verify Google Search was used
-            if hasattr(response, 'candidates') and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
-                    gm = candidate.grounding_metadata
-                    logger.info(f"Grounding metadata found: {type(gm)}")
-                    if hasattr(gm, 'search_entry_point'):
-                        logger.info(f"Search entry point: {gm.search_entry_point}")
-                    if hasattr(gm, 'grounding_chunks') and gm.grounding_chunks:
-                        logger.info(f"Grounding chunks count: {len(gm.grounding_chunks)}")
-                        for i, chunk in enumerate(gm.grounding_chunks[:5]):
-                            if hasattr(chunk, 'web') and chunk.web:
-                                logger.info(f"  Chunk {i+1}: {chunk.web.title} - {chunk.web.uri}")
-                else:
-                    logger.warning("No grounding metadata - Google Search may not have been used")
-
-            analysis_text = response.text
+            analysis_text = response.choices[0].message.content
             json_data = self._extract_json_from_response(analysis_text)
             return analysis_text, json_data
 
@@ -496,7 +480,7 @@ class BacktestAnalyzer:
             action = json_data.get("action", "HOLD")
             confidence = float(json_data.get("confidence", 0))
             reasoning = json_data.get("reasoning", "")
-            insider_likelihood = float(json_data.get("insider_trading_likelihood", 0))
+            insider_likelihood = float(json_data.get("information_asymmetry_score", 0))
             trader_credibility = json_data.get("trader_credibility", "UNKNOWN")
             insider_evidence = json_data.get("insider_evidence", "")
 
@@ -531,7 +515,7 @@ class BacktestAnalyzer:
 {'='*70}
 
 **生成时间**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
-**回测模式**: 无 Google Search
+**回测模式**: 无 Web Search
 
 ## 交易摘要
 
@@ -568,7 +552,6 @@ class BacktestAnalyzer:
 |------|------|
 | **操作建议** | {action_indicators.get(action, '⚪ HOLD')} |
 | **目标结果** | {json_data.get('outcome', 'N/A') if json_data else 'N/A'} |
-| **信心程度** | {confidence:.1%} |
 | **建议仓位** | {json_data.get('suggested_size_percent', 0):.1%} if json_data else 'N/A' |
 | **建议价格** | {json_data.get('suggested_price', 'Market') if json_data else 'Market'} |
 
@@ -650,8 +633,8 @@ async def main():
         condition_id = target_trade.get("conditionId", "")
         market_info = await analyzer.fetch_market_info(condition_id) if condition_id else None
 
-        # Analyze with LLM (with Google Search and prior trades history)
-        logger.info("\nCalling LLM with Google Search enabled...")
+        # Analyze with LLM (with Web Search and prior trades history)
+        logger.info("\nCalling LLM with Web Search enabled...")
         analysis_text, json_data = await analyzer.analyze_trade(target_trade, market_info, prior_trades)
 
         # Format and save report

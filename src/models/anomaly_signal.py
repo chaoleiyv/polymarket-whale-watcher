@@ -12,7 +12,7 @@ class AnomalySignal(BaseModel):
     Represents a stored anomaly signal for a market.
 
     This captures the raw trade and trader information for trades with medium
-    or higher insider trading likelihood. The insider_trading_likelihood is stored
+    or higher information asymmetry score. The information_asymmetry_score is stored
     for sorting/filtering purposes, but NOT shown to LLM - the model will
     re-analyze all signals (historical + current) together without bias.
     """
@@ -24,6 +24,7 @@ class AnomalySignal(BaseModel):
     market_id: str
     market_question: str
     market_slug: Optional[str] = None
+    condition_id: Optional[str] = None
 
     # Trade information
     transaction_hash: str
@@ -38,11 +39,22 @@ class AnomalySignal(BaseModel):
     trader_ranking: Optional[TraderRanking] = None
     trader_history: Optional[TraderHistory] = None
 
-    # Insider trading likelihood (for sorting/filtering only, NOT shown to LLM)
-    insider_trading_likelihood: float = Field(default=0.0, ge=0.0, le=1.0)
+    # Information asymmetry score (for sorting/filtering only, NOT shown to LLM)
+    information_asymmetry_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    # LLM analysis results
+    reasoning: str = ""
+    insider_evidence: str = ""
 
     # Metadata
     detected_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Resolution tracking
+    market_resolved: bool = False
+    market_resolved_at: Optional[datetime] = None
+    resolved_outcome: Optional[str] = None
+    signal_correct: Optional[bool] = None
+    theoretical_roi: Optional[float] = None
 
     def to_context_string(self) -> str:
         """

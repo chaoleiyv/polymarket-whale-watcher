@@ -15,17 +15,25 @@ import asyncio
 import os
 import re
 import signal
+import smtplib
 import sys
-from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 import typer
 
 from src.config import get_settings
+from src.db.database import SignalDatabase
 from src.services.market_fetcher import MarketFetcher
 from src.services.trade_monitor import TradeMonitor
+from src.services.price_monitor import PriceMonitor, VolatilityAlert
 from src.services.llm_analyzer import LLMAnalyzer
+from src.services.volatility_analyzer import VolatilityAnalyzer
+from src.services.daily_briefing import DailyBriefingGenerator
+from src.services.resolution_tracker import ResolutionTracker
 from src.models.trade import WhaleTrade
 from src.utils.logger import setup_logging, WhaleWatcherLogger
 
@@ -45,8 +53,28 @@ class WhaleWatcher:
         self.trade_monitor = TradeMonitor(on_whale_detected=self.on_whale_detected)
         self.llm_analyzer = LLMAnalyzer()
 
+        # Volatility analyzer for detecting "price leads news" signals
+        self.volatility_analyzer = VolatilityAnalyzer()
+
+        # Price monitor for ALL active markets (independent from trade monitor)
+        self.price_monitor = PriceMonitor(
+            window_seconds=3600,  # 1 hour
+            threshold=0.20,  # 20%
+            poll_interval=60,  # Poll every 60 seconds
+            on_volatility_detected=self.on_volatility_detected,
+        )
+
+        # Database and resolution tracker
+        self.db = SignalDatabase(self.settings.db_path)
+        self.resolution_tracker = ResolutionTracker(self.db)
+
+        # Daily briefing generator
+        self.briefing_generator = DailyBriefingGenerator(self.settings.db_path)
+
         self._running = False
-        self._refresh_interval = 300  # Refresh markets every 5 minutes
+        self._refresh_interval = 900  # Refresh markets every 15 minutes
+        self._resolution_check_interval = 1800  # Check resolutions every 30 minutes
+        self._last_briefing_date = None  # Track last briefing date
 
         # Ensure reports directory exists
         self.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -72,11 +100,15 @@ class WhaleWatcher:
             Path to the saved file
         """
         trade = whale_trade.trade
+        date_str = datetime.now().strftime("%Y%m%d")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         market_name = self._sanitize_filename(whale_trade.market_question)
 
+        day_dir = self.REPORTS_DIR / date_str
+        day_dir.mkdir(parents=True, exist_ok=True)
+
         filename = f"{timestamp}_{trade.side}_{int(trade.usdc_size)}USD_{market_name}.md"
-        filepath = self.REPORTS_DIR / filename
+        filepath = day_dir / filename
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(full_report)
@@ -95,7 +127,7 @@ class WhaleWatcher:
         # Log detection
         logger.whale_detected(
             amount=trade.usdc_size,
-            side=trade.side,
+            side=f"BUY {trade.outcome}",
             price=trade.price,
             market=whale_trade.market_question,
         )
@@ -116,6 +148,84 @@ class WhaleWatcher:
         filepath = self._save_report(whale_trade, full_report)
         logger.info(f"Report saved to: {filepath}")
 
+        # Real-time email alert for high information asymmetry (>= 60%)
+        ias = decision.recommendation.information_asymmetry_score
+        if ias >= 0.6:
+            self._send_alert_email(whale_trade, full_report, ias)
+
+        logger.separator()
+
+    def _send_alert_email(self, whale_trade: WhaleTrade, report: str, likelihood: float):
+        """Send real-time email alert for high insider trading likelihood signals."""
+        settings = get_settings()
+        if not settings.email_enabled or not settings.email_sender or not settings.email_password:
+            return
+
+        alert_recipient = "1253608463@qq.com"
+        trade = whale_trade.trade
+
+        try:
+            subject = (
+                f"内幕交易警报 ({likelihood:.0%}) — "
+                f"BUY {trade.outcome} @ {trade.price:.4f} "
+                f"${trade.usdc_size:,.0f} — {whale_trade.market_question[:50]}"
+            )
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = settings.email_sender
+            msg["To"] = alert_recipient
+            msg.attach(MIMEText(report, "plain", "utf-8"))
+
+            with smtplib.SMTP_SSL(settings.email_smtp_server, settings.email_smtp_port) as server:
+                server.login(settings.email_sender, settings.email_password)
+                server.sendmail(settings.email_sender, alert_recipient, msg.as_string())
+
+            logger.info(f"Insider alert email sent to {alert_recipient} (likelihood: {likelihood:.0%})")
+        except Exception as e:
+            logger.error(f"Failed to send alert email: {e}")
+
+    async def on_volatility_detected(self, alert: VolatilityAlert) -> None:
+        """
+        Callback when price volatility is detected.
+
+        Analyzes the volatility to determine if it's a "price leads news" signal.
+
+        Args:
+            alert: The volatility alert
+        """
+        logger.info(
+            f"Volatility detected: {alert.market_question[:50]}... "
+            f"{alert.direction} {abs(alert.price_change_percent):.1%}"
+        )
+
+        # Analyze with LLM to check if price leads news
+        logger.info("Analyzing volatility for leading signal detection...")
+        signal = await self.volatility_analyzer.analyze_volatility(alert)
+
+        if signal:
+            # Print the analysis report
+            report = self.volatility_analyzer.format_signal_report(signal)
+            print(report)
+
+            if signal.is_leading_signal:
+                logger.info(
+                    f"LEADING SIGNAL recorded: {alert.market_question[:50]}... "
+                    f"Time advantage: {signal.time_advantage_minutes} minutes"
+                )
+            else:
+                logger.info(
+                    f"Signal analyzed: {signal.signal_type.value} "
+                    f"(confidence: {signal.confidence:.1%})"
+                )
+
+            # Print stats
+            stats = self.volatility_analyzer.get_leading_signals_stats()
+            logger.info(
+                f"Dataset stats: {stats['total_signals']} total, "
+                f"{stats['leading_signals']} leading signals"
+            )
+
         logger.separator()
 
     async def refresh_markets(self) -> None:
@@ -126,9 +236,28 @@ class WhaleWatcher:
             limit=self.settings.trending_markets_limit
         )
 
+        # Additionally scan for specialized market categories
+        # that may not be in the top trending list
+        existing_ids = {tm.market.id for tm in trending_markets}
+
+        # 1. Token launch / crypto project markets
+        token_markets = self.market_fetcher.get_token_launch_markets()
+        token_added = 0
+        for tm in token_markets:
+            if tm.market.id not in existing_ids:
+                trending_markets.append(tm)
+                existing_ids.add(tm.market.id)
+                token_added += 1
+
+        if token_added:
+            logger.info(
+                f"Added {token_added} token launch markets "
+                f"(total: {len(trending_markets)})"
+            )
+
         if trending_markets:
             self.trade_monitor.set_monitored_markets(trending_markets)
-            logger.info(f"Now monitoring {len(trending_markets)} trending markets")
+            logger.info(f"Now monitoring {len(trending_markets)} markets")
         else:
             logger.error("Failed to fetch trending markets")
 
@@ -148,16 +277,25 @@ class WhaleWatcher:
             max_price=self.settings.max_price,
         )
 
-        # Start monitoring and market refresh tasks
+        # Start monitoring tasks:
+        # 1. Trade monitor - watches top markets for whale trades
+        # 2. Market refresh - refreshes the market list periodically
+        # 3. Daily briefing - generates daily summary at midnight
+        # 4. Resolution check - checks if markets with signals have resolved
+        # NOTE: Price volatility monitor is temporarily disabled
         monitor_task = asyncio.create_task(self.trade_monitor.run())
+        # price_monitor_task = asyncio.create_task(self.price_monitor.run())
         refresh_task = asyncio.create_task(self._refresh_loop())
+        briefing_task = asyncio.create_task(self._briefing_loop())
+        resolution_task = asyncio.create_task(self._resolution_check_loop())
 
         try:
-            await asyncio.gather(monitor_task, refresh_task)
+            await asyncio.gather(monitor_task, refresh_task, briefing_task, resolution_task)
         except asyncio.CancelledError:
             logger.info("Shutting down...")
         finally:
             self.trade_monitor.stop()
+            self.price_monitor.stop()
             await self.trade_monitor.close()
 
     async def _refresh_loop(self) -> None:
@@ -167,10 +305,58 @@ class WhaleWatcher:
             if self._running:
                 await self.refresh_markets()
 
+    def _briefing_already_sent(self, date: datetime) -> bool:
+        """Check if briefing for a date was already generated (file exists)."""
+        from src.services.daily_briefing import BRIEFINGS_DIR
+        date_str = date.strftime("%Y-%m-%d")
+        return (BRIEFINGS_DIR / f"briefing_{date_str}.md").exists()
+
+    async def _briefing_loop(self) -> None:
+        """Generate daily briefing for previous day at 10:00 local time."""
+        while self._running:
+            now = datetime.now()
+            today = now.date()
+            yesterday = now - timedelta(days=1)
+
+            # Generate at 10:00 local time, skip if already sent (survives restart)
+            if now.hour == 10 and now.minute >= 0:
+                if self._last_briefing_date != today and not self._briefing_already_sent(yesterday):
+                    try:
+                        filepath = self.briefing_generator.generate_briefing()
+                        if filepath:
+                            logger.info(f"Daily briefing generated: {filepath}")
+                        self._last_briefing_date = today
+                    except Exception as e:
+                        logger.error(f"Error generating daily briefing: {e}")
+                else:
+                    self._last_briefing_date = today
+
+            # Check every minute
+            await asyncio.sleep(60)
+
+    async def _resolution_check_loop(self) -> None:
+        """Periodically check if markets with signals have resolved."""
+        # Initial delay to let the system start up
+        await asyncio.sleep(60)
+
+        while self._running:
+            try:
+                result = await self.resolution_tracker.check_all()
+                if result["resolved"] > 0:
+                    logger.info(
+                        f"Resolution check: {result['resolved']} markets resolved, "
+                        f"{result['signals_updated']} signals updated"
+                    )
+            except Exception as e:
+                logger.error(f"Error in resolution check: {e}")
+
+            await asyncio.sleep(self._resolution_check_interval)
+
     def stop(self) -> None:
         """Stop the whale watcher."""
         self._running = False
         self.trade_monitor.stop()
+        self.price_monitor.stop()
 
 
 # Global instance for signal handling
@@ -290,6 +476,76 @@ def test_analyze(
     print("\nFull Analysis:")
     print("-" * 60)
     print(decision.analysis)
+
+
+@app.command()
+def briefing(
+    date: str = typer.Option(None, "--date", "-d", help="Date in YYYY-MM-DD format (defaults to yesterday)"),
+    today: bool = typer.Option(False, "--today", "-t", help="Generate briefing for today instead of yesterday"),
+):
+    """Generate daily briefing manually."""
+    setup_logging("INFO")
+
+    settings = get_settings()
+    generator = DailyBriefingGenerator(settings.db_path)
+
+    if today:
+        filepath = generator.generate_today_briefing()
+    elif date:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d")
+            filepath = generator.generate_briefing(target_date)
+        except ValueError:
+            print(f"Invalid date format: {date}. Use YYYY-MM-DD")
+            raise typer.Exit(1)
+    else:
+        filepath = generator.generate_briefing()  # Yesterday by default
+
+    if filepath:
+        print(f"\nBriefing generated: {filepath}")
+
+        # Print the content
+        with open(filepath, 'r', encoding='utf-8') as f:
+            print("\n" + "=" * 80)
+            print(f.read())
+    else:
+        print("\nNo signals found for the specified date. No briefing generated.")
+
+
+@app.command()
+def migrate():
+    """Migrate anomaly signals from JSON files to SQLite database."""
+    setup_logging("INFO")
+
+    settings = get_settings()
+    db = SignalDatabase(settings.db_path)
+
+    json_dir = Path(__file__).parent.parent / "anomaly_signals"
+    print(f"Migrating signals from {json_dir} to {settings.db_path}")
+
+    count = db.migrate_from_json(json_dir)
+    print(f"Migration complete: {count} signals migrated")
+
+    # Show stats
+    stats = db.get_stats()
+    print(f"\nDatabase stats:")
+    print(f"  Total signals: {stats['total_signals']}")
+    print(f"  Resolved: {stats['resolved']}")
+
+
+@app.command()
+def dashboard(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to run the dashboard on"),
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
+):
+    """Start the signal performance dashboard web server."""
+    setup_logging("INFO")
+
+    import uvicorn
+    from src.dashboard import app as dashboard_app
+
+    print(f"Starting dashboard at http://{host}:{port}")
+    uvicorn.run(dashboard_app, host=host, port=port)
 
 
 def main():
