@@ -1,138 +1,192 @@
 # Polymarket Whale Watcher
 
-AI-powered whale trade detection and analysis bot for Polymarket prediction markets.
+AI-powered whale trade surveillance and analysis system for Polymarket prediction markets. Combines real-time monitoring, multi-dimensional anomaly detection, LLM-driven investigation with 14 autonomous tools, and signal accuracy tracking.
 
-## Overview
+## Features
 
-This bot combines the market monitoring approach from `polymarket-copy-trading-bot` with the AI analysis capabilities of `PolyMarket-trading-AI-model` to:
+- **Real-Time Monitoring** — Parallel per-market polling of 50+ trending markets
+- **Multi-Dimensional Anomaly Detection** — Scores trades on size, price uncertainty, time-of-day, trader deviation, and cluster signals
+- **Trader Profiling** — Leaderboard ranking, trading history, recent behavior analysis
+- **LLM Analysis with Tool-Use** — 14 autonomous tools (Twitter, web search, Telegram, crypto prices, stocks, economic data, Congress bills, DeFi metrics, on-chain analysis)
+- **Signal Accuracy Tracking** — Automatic market resolution checking, win rate stats by confidence tier
+- **Daily Intelligence Briefing** — Automated 10:00 AM daily summary with high-confidence signals
+- **Email Alerts** — Real-time notifications for high-IAS signals (>= 60%)
+- **Web Dashboard** — FastAPI-based signal performance dashboard
+- **Leading Signal Research** — "Price leads news" dataset collection
 
-1. **Fetch Trending Markets** - Gets the most active markets by 24-hour volume
-2. **Monitor for Whale Trades** - Watches for large trades ($10,000+ USD)
-3. **Filter Anomalies** - Only triggers on trades with prices between 0.2-0.8 (uncertain markets)
-4. **AI Analysis** - Uses LLM to analyze the whale trade and market context
-5. **Trade Execution** - Optionally executes trades based on AI recommendations
-
-## Installation
+## Quick Start
 
 ```bash
-# Clone or navigate to the project
-cd polymarket-whale-watcher
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
 # Install dependencies
 pip install -r requirements.txt
-```
 
-## Configuration
-
-Copy `.env.example` to `.env` and configure:
-
-```bash
+# Configure environment
 cp .env.example .env
-```
+# Edit .env with your API keys
 
-Required settings:
-- `OPENAI_API_KEY` - Your OpenAI API key for LLM analysis
-- `POLYGON_WALLET_PRIVATE_KEY` - Your wallet private key (for trade execution)
-
-Optional settings:
-- `MIN_TRADE_SIZE_USD` - Minimum trade size to trigger (default: 10000)
-- `MIN_PRICE` / `MAX_PRICE` - Price range filter (default: 0.2-0.8)
-- `ENABLE_TRADE_EXECUTION` - Set to `true` to enable actual trading (default: false)
-
-## Usage
-
-### Start the Whale Watcher
-
-```bash
-# Run the bot
+# Start the whale watcher
 python -m src.main run
 
 # With debug logging
 python -m src.main run --debug
 ```
 
-### Check Trending Markets
+## Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+**Required:**
+- `GEMINI_API_KEY` — Gemini API key for LLM analysis
+- `INTERNAL_API_URL` / `INTERNAL_API_KEY` — Internal trade data API
+
+**Optional:**
+- `TAVILY_API_KEY` — Web search (primary)
+- `TWITTER_API_KEY` — Twitter sentiment search
+- `POLYGON_API_KEY` — Stock/ETF data
+- `FRED_API_KEY` — Economic indicators
+- `ETHERSCAN_API_KEY` — On-chain data
+- `EMAIL_*` — Email alert settings
+- `MIN_TRADE_SIZE_USD` — Minimum trade size (default: 1000)
+- `MIN_PRICE` / `MAX_PRICE` — Price range filter (default: 0.2-0.8)
+
+## Commands
 
 ```bash
+# Start monitoring
+python -m src.main run [--debug]
+
+# Check trending markets
 python -m src.main check-markets --limit 20
-```
 
-### Check Wallet Balance
-
-```bash
-python -m src.main check-balance
-```
-
-### Test LLM Analysis
-
-```bash
+# Test LLM analysis on a specific market
 python -m src.main test-analyze <market_id>
+
+# Generate daily briefing
+python -m src.main briefing --today
+python -m src.main briefing --date 2026-04-17
+
+# Migrate legacy JSON signals to SQLite
+python -m src.main migrate
+
+# Start web dashboard
+python -m src.main dashboard --port 8000
 ```
 
 ## Architecture
 
 ```
+Polymarket API        Internal Trade API       Gamma API
+       |                      |                     |
+       v                      v                     v
+ MarketFetcher          TradeMonitor          PriceMonitor
+       |                      |                     |
+       v                      v                     v
+ TrendingMarkets      AnomalyDetector      VolatilityAnalyzer
+                              |
+                              v
+                    LLMAnalyzer (14 tools)
+                     |               |
+                     v               v
+              AnomalySignal    Reports/Alerts
+                     |
+                     v
+              ResolutionTracker → StatsEngine → Dashboard
+```
+
+### Project Structure
+
+```
 src/
-├── config/
-│   └── settings.py          # Configuration management
+├── config/settings.py              # Environment configuration
 ├── models/
-│   ├── market.py            # Market data models
-│   ├── trade.py             # Trade/whale trade models
-│   └── decision.py          # LLM decision models
+│   ├── market.py                   # Market, TrendingMarket
+│   ├── trade.py                    # TradeActivity, WhaleTrade, TraderRanking
+│   ├── decision.py                 # TradeRecommendation, LLMDecision
+│   ├── anomaly_signal.py           # AnomalySignal (stored signal)
+│   └── leading_signal.py           # LeadingSignal (price leads news)
 ├── services/
-│   ├── market_fetcher.py    # Fetches trending markets
-│   ├── trade_monitor.py     # Monitors markets for trades
-│   ├── anomaly_detector.py  # Detects whale trades
-│   ├── llm_analyzer.py      # AI analysis
-│   └── trade_executor.py    # Trade execution
+│   ├── market_fetcher.py           # Polymarket API, market filtering
+│   ├── trade_monitor.py            # Per-market parallel monitoring
+│   ├── price_monitor.py            # Volatility detection
+│   ├── anomaly_detector.py         # Multi-dimensional anomaly scoring
+│   ├── llm_analyzer.py             # LLM with tool-use (14 tools, 5 rounds max)
+│   ├── volatility_analyzer.py      # Leading signal detection
+│   ├── trader_profiler.py          # Trader profile generation
+│   ├── tools.py                    # Tool registry
+│   ├── daily_briefing.py           # Daily summary generation
+│   ├── resolution_tracker.py       # Market resolution checking
+│   ├── stats_engine.py             # Performance statistics
+│   ├── anomaly_history.py          # Signal storage (SQLite)
+│   ├── coingecko.py                # Crypto prices
+│   ├── fred.py                     # Economic indicators (FRED)
+│   ├── polygon.py                  # Stock prices & news
+│   ├── congress.py                 # US legislation
+│   ├── defillama.py                # DeFi TVL, revenue, token unlocks
+│   ├── etherscan.py                # On-chain wallet analysis
+│   ├── twitter_search.py           # Twitter API
+│   ├── telegram_search.py          # Telegram channels
+│   └── web_search.py               # Unified search (Tavily → Serper → DDG)
+├── db/database.py                  # SQLite signal storage
 ├── prompts/
-│   └── whale_analyzer.py    # LLM prompts
-├── utils/
-│   └── logger.py            # Logging utilities
-└── main.py                  # Entry point
+│   ├── whale_analyzer.py           # LLM system prompt & tool schemas
+│   └── volatility_analyzer.py      # Volatility analysis prompt
+├── dashboard.py                    # FastAPI web dashboard
+└── main.py                         # Entry point (WhaleWatcher orchestrator)
+
+data/                               # SQLite database + processed transactions
+reports/                            # Analysis reports (by date)
+daily_briefings/                    # Daily intelligence summaries
+leading_signals/                    # "Price leads news" research dataset
+price_volatility/                   # Volatility alert records
 ```
 
 ## How It Works
 
 ### 1. Market Selection
-- Fetches top markets sorted by 24-hour trading volume
-- Filters for active, CLOB-enabled markets
-- Refreshes market list every 5 minutes
+- Fetches top trending markets by 24h volume from Polymarket Gamma API
+- Filters out sports, weather, and short-term price markets
+- Refreshes market list every 15 minutes
 
 ### 2. Trade Monitoring
-- Polls Polymarket Data API for trade activity
-- Checks each monitored market every N seconds (configurable)
-- Tracks processed transactions to avoid duplicates
+- Runs parallel async tasks per monitored market
+- Polls internal API incrementally (new trades since last check)
+- Rate-limited at 5 QPS to respect API limits
+- Deduplicates by transaction hash
 
 ### 3. Anomaly Detection
-Triggers when:
-- Trade size >= $10,000 USD
-- Trade price between 0.2 and 0.8 (uncertain outcome)
+Multi-dimensional scoring on 5 axes:
+- **Size** — Trade size relative to market 24h volume
+- **Price uncertainty** — Closer to 0.5 = more interesting
+- **Time-of-day** — ET hour-based suspicion weights
+- **Trader deviation** — Trade size vs trader's historical average
+- **Cluster signal** — Same-direction trades within 5-minute window
 
-### 4. LLM Analysis
-When a whale trade is detected:
-- Formats trade context (amount, direction, price, market info)
-- Sends to GPT-4 with superforecaster methodology
-- Extracts structured recommendation (BUY/SELL/HOLD)
+### 4. LLM Investigation
+When a whale trade triggers:
+1. Builds rich context: trade details + trader profile + market data + historical signals
+2. LLM autonomously uses tools to investigate (up to 5 rounds):
+   - Search Twitter/Telegram for insider chatter
+   - Check crypto prices, DeFi metrics, on-chain activity
+   - Look up stock movements, economic data, Congress bills
+   - Web search for breaking news
+3. Produces structured recommendation: action, confidence, information asymmetry score (0-1)
+4. Generates markdown report saved to `reports/`
 
-### 5. Trade Execution (Optional)
-If enabled and LLM recommends:
-- Calculates position size (capped at 20% of balance)
-- Executes market order via Polymarket CLOB
-- Logs execution result
+### 5. Signal Tracking
+- Resolution tracker checks every 30 minutes for resolved markets
+- Validates signal correctness against actual outcomes
+- Computes theoretical ROI for each signal
+- Stats engine aggregates win rates by confidence tier
 
-## Safety Features
+## Safety
 
-- Trade execution disabled by default
-- Maximum position size capped at 20%
-- Minimum confidence threshold (60%) for trade execution
-- Price range filter to avoid obvious outcomes
-- Comprehensive logging for audit trail
+- Trade execution disabled by default (`ENABLE_TRADE_EXECUTION=false`)
+- Position size capped at 20% of balance if enabled
+- Minimum 60% confidence threshold for execution
+- Price range filter avoids obvious outcomes (0.2-0.8)
+- All decisions logged for audit trail
+- Rate limiting on all external APIs
 
 ## Disclaimer
 
-This bot is for educational and research purposes. Trading on prediction markets involves significant risk. Never trade with funds you cannot afford to lose. Always verify the bot's recommendations independently.
+This system is for research and educational purposes. Prediction market trading involves significant risk. Never trade with funds you cannot afford to lose. Always verify recommendations independently.
