@@ -37,7 +37,7 @@ Copy `.env.example` to `.env` and configure:
 
 **Required:**
 - `GEMINI_API_KEY` — Gemini API key for LLM analysis
-- `INTERNAL_API_URL` / `INTERNAL_API_KEY` — Internal trade data API
+- `INTERNAL_API_URL` / `INTERNAL_API_KEY` — Trade data API (currently using internal API, can be replaced with [Polymarket CLOB API](https://docs.polymarket.com/))
 
 **Optional:**
 - `TAVILY_API_KEY` — Web search (primary)
