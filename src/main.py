@@ -166,7 +166,7 @@ class WhaleWatcher:
 
         try:
             subject = (
-                f"异常交易警报 ({likelihood:.0%}) — "
+                f"Anomalous Trade Alert ({likelihood:.0%}) — "
                 f"BUY {trade.outcome} @ {trade.price:.4f} "
                 f"${trade.usdc_size:,.0f} — {whale_trade.market_question[:50]}"
             )

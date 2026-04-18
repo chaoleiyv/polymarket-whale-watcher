@@ -170,31 +170,31 @@ class DailyBriefingGenerator:
         date_str = date.strftime("%Y-%m-%d")
 
         lines = [
-            f"# 每日信号简报 - {date_str}",
+            f"# Daily Signal Briefing - {date_str}",
             "",
-            f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "",
         ]
 
         # Summary stats
         if is_fallback:
-            summary_line = f"- 今日无可信度 ≥ 60% 的内幕信号，以下为可信度最高的 **{len(insider_signals)}** 条"
+            summary_line = f"- No signals with confidence >= 60% today; showing the top **{len(insider_signals)}** by confidence"
         else:
-            summary_line = f"- 高可信度信息不对称信号: **{len(insider_signals)}** 个 (可信度 ≥ 60%)"
+            summary_line = f"- High-confidence information asymmetry signals: **{len(insider_signals)}** (confidence >= 60%)"
 
         lines.extend([
-            "## 今日概览",
+            "## Today's Overview",
             "",
             summary_line,
-            f"- 异常价格波动: **{len(volatility_alerts)}** 次",
+            f"- Abnormal price volatility events: **{len(volatility_alerts)}**",
             "",
         ])
 
         # Insider trading signals section
         if is_fallback:
-            section_title = "## 今日可信度最高的异常交易"
+            section_title = "## Today's Top Anomalous Trades by Confidence"
         else:
-            section_title = "## 高可信度信息不对称信号"
+            section_title = "## High-Confidence Information Asymmetry Signals"
 
         lines.extend([
             "---",
@@ -220,32 +220,32 @@ class DailyBriefingGenerator:
                 lines.extend([
                     f"### {i}. {market_question[:80]}{'...' if len(market_question) > 80 else ''}",
                     "",
-                    f"| 指标 | 值 |",
-                    f"|------|-----|",
-                    f"| 信息不对称 | **{likelihood:.0%}** |",
-                    f"| 交易方向 | BUY {trade_outcome} Token ({'看多' if trade_outcome == 'Yes' else '看空'}) |",
-                    f"| 买入价格 | {trade_price:.4f}（赔率 {odds_str}） |",
-                    f"| 花费金额 | **${trade_size:,.0f}** USDC |",
-                    f"| 检测时间 | {detected_at} |",
+                    f"| Metric | Value |",
+                    f"|--------|-------|",
+                    f"| Info Asymmetry | **{likelihood:.0%}** |",
+                    f"| Direction | BUY {trade_outcome} Token ({'Bullish' if trade_outcome == 'Yes' else 'Bearish'}) |",
+                    f"| Entry Price | {trade_price:.4f} (Odds {odds_str}) |",
+                    f"| Trade Size | **${trade_size:,.0f}** USDC |",
+                    f"| Detected At | {detected_at} |",
                     "",
                 ])
 
                 if reasoning:
                     lines.extend([
-                        f"**分析过程**: {reasoning}",
+                        f"**Analysis**: {reasoning}",
                         "",
                     ])
 
                 if insider_evidence:
                     lines.extend([
-                        f"**内幕证据**: {insider_evidence}",
+                        f"**Insider Evidence**: {insider_evidence}",
                         "",
                     ])
 
                 lines.append("")
         else:
             lines.extend([
-                "*今日无异常交易信号*",
+                "*No anomalous trade signals today*",
                 "",
             ])
 
@@ -253,14 +253,14 @@ class DailyBriefingGenerator:
         lines.extend([
             "---",
             "",
-            "## 异常价格波动",
+            "## Abnormal Price Volatility",
             "",
         ])
 
         if volatility_alerts:
             lines.extend([
-                "| 市场 | 方向 | 波动幅度 | 起始价格 | 结束价格 | 检测时间 |",
-                "|------|------|----------|----------|----------|----------|",
+                "| Market | Direction | Change | Start Price | End Price | Detected At |",
+                "|--------|-----------|--------|-------------|-----------|-------------|",
             ])
 
             for alert in volatility_alerts:
@@ -269,7 +269,7 @@ class DailyBriefingGenerator:
                 if len(market_question) > 40:
                     market_question = market_question[:37] + "..."
 
-                direction = "下跌" if alert.get("direction") == "DOWN" else "上涨"
+                direction = "Down" if alert.get("direction") == "DOWN" else "Up"
                 price_change = abs(alert.get("price_change_percent", 0))
                 start_price = alert.get("start_price", 0)
                 end_price = alert.get("end_price", 0)
@@ -283,7 +283,7 @@ class DailyBriefingGenerator:
             lines.append("")
         else:
             lines.extend([
-                "*今日无异常价格波动*",
+                "*No abnormal price volatility today*",
                 "",
             ])
 
@@ -300,7 +300,7 @@ class DailyBriefingGenerator:
         lines.extend([
             "---",
             "",
-            "*此简报由 Polymarket Whale Watcher 自动生成*",
+            "*This briefing was automatically generated by Polymarket Whale Watcher*",
         ])
 
         return "\n".join(lines)
@@ -364,7 +364,7 @@ class DailyBriefingGenerator:
             recipients = [r.strip() for r in settings.email_recipient.split(",") if r.strip()]
 
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Polymarket 鲸鱼日报 - {date_str}"
+            msg["Subject"] = f"Polymarket Whale Daily Briefing - {date_str}"
             msg["From"] = settings.email_sender
             msg["To"] = ", ".join(recipients)
 

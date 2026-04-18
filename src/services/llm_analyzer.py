@@ -381,49 +381,49 @@ class LLMAnalyzer:
 
         ias = rec.information_asymmetry_score
         if ias >= 0.7:
-            insider_indicator = f"🔴 高信息不对称 ({ias:.0%})"
+            insider_indicator = f"High Information Asymmetry ({ias:.0%})"
         elif ias >= 0.4:
-            insider_indicator = f"🟡 中等信息不对称 ({ias:.0%})"
+            insider_indicator = f"Medium Information Asymmetry ({ias:.0%})"
         else:
-            insider_indicator = f"🟢 低信息不对称 ({ias:.0%})"
+            insider_indicator = f"Low Information Asymmetry ({ias:.0%})"
 
         rank_num = whale_trade.trader_ranking.rank if whale_trade.trader_ranking and whale_trade.trader_ranking.rank else None
         credibility_indicators = {
-            TraderCredibility.HIGH: f"🏆 高可信度 (#{rank_num})" if rank_num else "🏆 高可信度",
-            TraderCredibility.MEDIUM: f"⭐ 中等可信度 (#{rank_num})" if rank_num else "⭐ 中等可信度",
-            TraderCredibility.LOW: f"📉 低可信度 (#{rank_num})" if rank_num else "📉 低可信度",
-            TraderCredibility.UNKNOWN: "❓ 未知 (未上榜)",
+            TraderCredibility.HIGH: f"High Credibility (#{rank_num})" if rank_num else "High Credibility",
+            TraderCredibility.MEDIUM: f"Medium Credibility (#{rank_num})" if rank_num else "Medium Credibility",
+            TraderCredibility.LOW: f"Low Credibility (#{rank_num})" if rank_num else "Low Credibility",
+            TraderCredibility.UNKNOWN: "Unknown (Unranked)",
         }
-        credibility_str = credibility_indicators.get(rec.trader_credibility, "❓ 未知")
+        credibility_str = credibility_indicators.get(rec.trader_credibility, "Unknown")
 
         trader_ranking_str = ""
         if whale_trade.trader_ranking:
             tr = whale_trade.trader_ranking
-            rank_str = f"#{tr.rank}" if tr.rank else "未上榜"
+            rank_str = f"#{tr.rank}" if tr.rank else "Unranked"
             pnl_str = f"${tr.pnl:,.2f}" if tr.pnl else "N/A"
-            trader_ranking_str = f"| **交易者排名** | {rank_str} (PnL: {pnl_str}) |"
+            trader_ranking_str = f"| **Trader Rank** | {rank_str} (PnL: {pnl_str}) |"
 
         historical_info = ""
         if historical_signal_count > 0:
-            historical_info = f"\n**参考历史异常信号**: {historical_signal_count} 笔 (已综合分析)"
+            historical_info = f"\n**Historical Anomaly Signals Referenced**: {historical_signal_count} (analyzed together)"
 
         report = f"""
 {'='*70}
-# 🐋 鲸鱼交易分析报告
+# Whale Trade Analysis Report
 {'='*70}
 
-**生成时间**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC{historical_info}
+**Generated at**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC{historical_info}
 
-## 交易摘要
+## Trade Summary
 
-| 项目 | 详情 |
-|------|------|
-| **市场** | {whale_trade.market_question} |
-| **交易金额** | ${trade.usdc_size:,.2f} USDC |
-| **交易方向** | BUY {trade.outcome} Token ({'看多' if trade.outcome == 'Yes' else '看空'}) |
-| **交易价格** | {trade.price:.4f} ({trade.price:.1%}) |
-| **当前赔率** | {prices_str} |
-| **交易时间** | {datetime.fromtimestamp(trade.timestamp).strftime('%Y-%m-%d %H:%M:%S') if trade.timestamp else 'N/A'} |
+| Field | Details |
+|-------|---------|
+| **Market** | {whale_trade.market_question} |
+| **Trade Size** | ${trade.usdc_size:,.2f} USDC |
+| **Direction** | BUY {trade.outcome} Token ({'Bullish' if trade.outcome == 'Yes' else 'Bearish'}) |
+| **Trade Price** | {trade.price:.4f} ({trade.price:.1%}) |
+| **Current Odds** | {prices_str} |
+| **Trade Time** | {datetime.fromtimestamp(trade.timestamp).strftime('%Y-%m-%d %H:%M:%S') if trade.timestamp else 'N/A'} |
 {trader_ranking_str}
 
 {'='*70}
@@ -431,20 +431,20 @@ class LLMAnalyzer:
 {decision.analysis}
 
 {'='*70}
-## 🔍 信息不对称评估
+## Information Asymmetry Assessment
 {'='*70}
 
-| 项目 | 评估 |
-|------|------|
-| **信息不对称程度** | {insider_indicator} |
-| **交易者可信度** | {credibility_str} |
+| Field | Assessment |
+|-------|------------|
+| **Information Asymmetry** | {insider_indicator} |
+| **Trader Credibility** | {credibility_str} |
 
-**关键证据**: {rec.insider_evidence or '无明确证据'}
+**Key Evidence**: {rec.insider_evidence or 'No clear evidence'}
 
-**推理过程**: {rec.reasoning}
+**Reasoning**: {rec.reasoning}
 
 {'='*70}
-⚠️ 免责声明：本报告由AI生成，仅供参考，不构成投资建议。
+Disclaimer: This report is AI-generated for informational purposes only and does not constitute investment advice.
 {'='*70}
 """
         return report

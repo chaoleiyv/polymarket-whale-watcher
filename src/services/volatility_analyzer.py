@@ -256,59 +256,59 @@ class VolatilityAnalyzer:
         Returns:
             Formatted report string
         """
-        direction_cn = "上涨" if signal.direction == "UP" else "下跌"
-        signal_type_cn = {
-            SignalType.LEADING_SIGNAL: "🚨 领先信号（价格早于新闻）",
-            SignalType.NEWS_DRIVEN: "📰 新闻驱动",
-            SignalType.SOCIAL_DRIVEN: "🐦 社交驱动",
-            SignalType.SPECULATION: "💭 投机波动",
+        direction_label = "Up" if signal.direction == "UP" else "Down"
+        signal_type_label = {
+            SignalType.LEADING_SIGNAL: "Leading Signal (Price Preceded News)",
+            SignalType.NEWS_DRIVEN: "News-Driven",
+            SignalType.SOCIAL_DRIVEN: "Social-Driven",
+            SignalType.SPECULATION: "Speculative Volatility",
         }
 
-        news_headlines = "\n".join([f"  - {h}" for h in signal.key_news_headlines]) or "  无"
-        social_posts = "\n".join([f"  - {p}" for p in signal.key_social_posts]) or "  无"
+        news_headlines = "\n".join([f"  - {h}" for h in signal.key_news_headlines]) or "  None"
+        social_posts = "\n".join([f"  - {p}" for p in signal.key_social_posts]) or "  None"
 
         report = f"""
 {'='*70}
-# 📊 价格波动分析报告
+# Price Volatility Analysis Report
 {'='*70}
 
-**分析时间**: {signal.detected_at}
+**Analysis Time**: {signal.detected_at}
 
-## 波动详情
+## Volatility Details
 
-| 项目 | 详情 |
-|------|------|
-| **市场** | {signal.market_question} |
-| **价格变动** | {direction_cn} {abs(signal.price_change_percent):.1%} |
-| **起始价格** | {signal.start_price:.2%} |
-| **结束价格** | {signal.end_price:.2%} |
-| **时间窗口** | {signal.window_seconds // 60} 分钟 |
+| Field | Details |
+|-------|---------|
+| **Market** | {signal.market_question} |
+| **Price Change** | {direction_label} {abs(signal.price_change_percent):.1%} |
+| **Start Price** | {signal.start_price:.2%} |
+| **End Price** | {signal.end_price:.2%} |
+| **Time Window** | {signal.window_seconds // 60} min |
 
 {'='*70}
-## 🔍 分析结果
+## Analysis Results
 {'='*70}
 
-| 项目 | 结果 |
-|------|------|
-| **信号类型** | {signal_type_cn.get(signal.signal_type, '未知')} |
-| **置信度** | {signal.confidence:.1%} |
-| **是否领先信号** | {'✅ 是' if signal.is_leading_signal else '❌ 否'} |
-| **时间优势** | {signal.time_advantage_minutes} 分钟 |
+| Field | Result |
+|-------|--------|
+| **Signal Type** | {signal_type_label.get(signal.signal_type, 'Unknown')} |
+| **Confidence** | {signal.confidence:.1%} |
+| **Is Leading Signal** | {'Yes' if signal.is_leading_signal else 'No'} |
+| **Time Advantage** | {signal.time_advantage_minutes} min |
 
-**最早新闻时间**: {signal.earliest_news_time or 'N/A'}
-**最早社交时间**: {signal.earliest_social_time or 'N/A'}
+**Earliest News Time**: {signal.earliest_news_time or 'N/A'}
+**Earliest Social Time**: {signal.earliest_social_time or 'N/A'}
 
-## 关键新闻
+## Key News
 {news_headlines}
 
-## 关键社交帖子
+## Key Social Posts
 {social_posts}
 
-## 分析理由
+## Reasoning
 {signal.reasoning}
 
-## 推测信息来源
-{signal.potential_information_source or '未知'}
+## Suspected Information Source
+{signal.potential_information_source or 'Unknown'}
 
 {'='*70}
 {signal.full_analysis}

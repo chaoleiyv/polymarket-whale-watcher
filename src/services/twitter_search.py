@@ -195,12 +195,12 @@ class TwitterSearchService:
         # 1. Search TOP tweets - high engagement, represents importance
         top_result = self.search_tweets(query, search_mode="top", limit=limit)
         if "No recent tweets" not in top_result and "Error" not in top_result:
-            results.append("## 🔥 热门推文（高互动/重要性）\n" + top_result)
+            results.append("## Hot Tweets (High Engagement / Importance)\n" + top_result)
 
         # 2. Search LATEST tweets - real-time info, represents timeliness
         latest_result = self.search_tweets(query, search_mode="latest", limit=limit)
         if "No recent tweets" not in latest_result and "Error" not in latest_result:
-            results.append("## ⚡ 最新推文（实时/时效性）\n" + latest_result)
+            results.append("## Latest Tweets (Real-Time / Timeliness)\n" + latest_result)
 
         if not results:
             return f"No relevant tweets found for: {market_question[:50]}..."

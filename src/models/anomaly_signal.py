@@ -66,7 +66,7 @@ class AnomalySignal(BaseModel):
         trade_time = datetime.fromtimestamp(self.trade_timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
         # Trader ranking info
-        trader_rank_str = "未上榜"
+        trader_rank_str = "Unranked"
         trader_pnl_str = "N/A"
         trader_vol_str = "N/A"
         if self.trader_ranking:
@@ -81,14 +81,14 @@ class AnomalySignal(BaseModel):
         trader_history_str = ""
         if self.trader_history:
             trader_history_str = f"""
-- 近期交易数: {self.trader_history.total_trades} 笔
-- 交易总额: ${self.trader_history.total_volume:,.2f}
-- 大额交易数: {self.trader_history.large_trades_count} 笔"""
+- Recent Trades: {self.trader_history.total_trades}
+- Total Volume: ${self.trader_history.total_volume:,.2f}
+- Large Trades: {self.trader_history.large_trades_count}"""
 
-        return f"""**交易时间**: {trade_time}
-**交易方向**: {self.trade_side}
-**交易金额**: ${self.trade_size_usd:,.2f} USDC
-**交易价格**: {self.trade_price:.4f}
-**交易结果**: {self.trade_outcome}
-**交易者钱包**: {self.trader_wallet or 'Unknown'}
-**交易者排名**: {trader_rank_str} (PnL: {trader_pnl_str}, 交易量: {trader_vol_str}){trader_history_str}"""
+        return f"""**Trade Time**: {trade_time}
+**Direction**: {self.trade_side}
+**Trade Size**: ${self.trade_size_usd:,.2f} USDC
+**Trade Price**: {self.trade_price:.4f}
+**Outcome**: {self.trade_outcome}
+**Trader Wallet**: {self.trader_wallet or 'Unknown'}
+**Trader Rank**: {trader_rank_str} (PnL: {trader_pnl_str}, Volume: {trader_vol_str}){trader_history_str}"""

@@ -473,9 +473,9 @@ class TradeMonitor:
 
                 # Build human-readable summary
                 if outcome == "Yes":
-                    side_summary = f"持有 Yes {size:,.0f} 份 @ 均价 {avg_price:.2%}，当前 {cur_price:.2%}"
+                    side_summary = f"Holding Yes {size:,.0f} tokens @ avg {avg_price:.2%}, current {cur_price:.2%}"
                 else:
-                    side_summary = f"持有 No {size:,.0f} 份 @ 均价 {avg_price:.2%}，当前 {cur_price:.2%}"
+                    side_summary = f"Holding No {size:,.0f} tokens @ avg {avg_price:.2%}, current {cur_price:.2%}"
 
                 result.append(EventPosition(
                     market_question=title,
@@ -649,7 +649,7 @@ class TradeMonitor:
                 market_id=market_id,
             )
 
-            rank_str = f"(排名 #{trader_ranking.rank})" if trader_ranking and trader_ranking.rank else "(未上榜)"
+            rank_str = f"(Rank #{trader_ranking.rank})" if trader_ranking and trader_ranking.rank else "(Unranked)"
             breakdown_short = " | ".join(f"{k}={v:.2f}" for k, v in breakdown.items())
 
             if not should_analyze:

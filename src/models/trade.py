@@ -120,49 +120,49 @@ class WhaleTrade(BaseModel):
     def format_event_positions(self) -> str:
         """Format whale's event positions for LLM context."""
         if self.whale_event_positions:
-            info = "### 该鲸鱼在同一事件下其他市场的持仓\n"
-            info += "（用于判断是否存在对冲或关联押注）\n\n"
+            info = "### Whale's Positions in Other Markets Under the Same Event\n"
+            info += "(Used to identify hedging or correlated bets)\n\n"
             for pos in self.whale_event_positions:
-                pnl_str = f"盈亏 ${pos.pnl:+,.0f}" if pos.pnl else ""
+                pnl_str = f"PnL ${pos.pnl:+,.0f}" if pos.pnl else ""
                 info += (
                     f"- **{pos.market_question[:60]}{'...' if len(pos.market_question) > 60 else ''}**\n"
                     f"  {pos.side_summary} | "
-                    f"当前价值 ${pos.current_value:,.0f} | 成本 ${pos.initial_value:,.0f} | "
+                    f"Current Value ${pos.current_value:,.0f} | Cost Basis ${pos.initial_value:,.0f} | "
                     f"{pnl_str}\n"
                 )
             return info
-        return "### 该鲸鱼在同一事件下其他市场的持仓\n- 无其他关联持仓（单一市场事件或无跨市场交易）\n"
+        return "### Whale's Positions in Other Markets Under the Same Event\n- No other related positions (single-market event or no cross-market trades)\n"
 
     def format_top_traders(self) -> str:
         """Format market top holders for LLM context."""
-        info = "### 该市场 Top 5 多空双方持仓者\n"
-        info += "（反映市场主要参与者的立场和资质）\n"
+        info = "### Top 5 Bulls and Bears on This Market\n"
+        info += "(Reflects the stance and credentials of major participants)\n"
 
         if self.market_top_buyers:
-            info += "\n**看多方 (持有 Yes Token)**:\n"
+            info += "\n**Bulls (Holding Yes Token)**:\n"
             for i, t in enumerate(self.market_top_buyers, 1):
-                rank_str = f"排名 #{t.rank}" if t.rank else "未上榜"
+                rank_str = f"Rank #{t.rank}" if t.rank else "Unranked"
                 pnl_str = f"PnL ${t.pnl:,.0f}" if t.pnl is not None else ""
                 name_str = t.name or t.wallet[:10] + "..."
                 info += (
                     f"  {i}. **{name_str}** ({rank_str}{', ' + pnl_str if pnl_str else ''}) "
-                    f"— 持仓价值 ${t.net_volume_usd:,.0f}\n"
+                    f"— Position Value ${t.net_volume_usd:,.0f}\n"
                 )
         else:
-            info += "\n**看多方**: 无显著持仓\n"
+            info += "\n**Bulls**: No significant positions\n"
 
         if self.market_top_sellers:
-            info += "\n**看空方 (持有 No Token)**:\n"
+            info += "\n**Bears (Holding No Token)**:\n"
             for i, t in enumerate(self.market_top_sellers, 1):
-                rank_str = f"排名 #{t.rank}" if t.rank else "未上榜"
+                rank_str = f"Rank #{t.rank}" if t.rank else "Unranked"
                 pnl_str = f"PnL ${t.pnl:,.0f}" if t.pnl is not None else ""
                 name_str = t.name or t.wallet[:10] + "..."
                 info += (
                     f"  {i}. **{name_str}** ({rank_str}{', ' + pnl_str if pnl_str else ''}) "
-                    f"— 持仓价值 ${t.net_volume_usd:,.0f}\n"
+                    f"— Position Value ${t.net_volume_usd:,.0f}\n"
                 )
         else:
-            info += "\n**看空方**: 无显著持仓\n"
+            info += "\n**Bears**: No significant positions\n"
 
         return info
 
@@ -171,70 +171,70 @@ class WhaleTrade(BaseModel):
         # Format trader ranking info
         trader_info = ""
         if self.trader_ranking:
-            rank_str = f"#{self.trader_ranking.rank}" if self.trader_ranking.rank else "未上榜"
+            rank_str = f"#{self.trader_ranking.rank}" if self.trader_ranking.rank else "Unranked"
             pnl_str = f"${self.trader_ranking.pnl:,.2f}" if self.trader_ranking.pnl else "N/A"
             vol_str = f"${self.trader_ranking.volume:,.2f}" if self.trader_ranking.volume else "N/A"
-            verified_str = "✅ 已认证" if self.trader_ranking.verified else "未认证"
+            verified_str = "Verified" if self.trader_ranking.verified else "Unverified"
             trader_info = f"""
-### 交易者排名信息 (盈利排行榜)
-- **排名**: {rank_str} (时间范围: {self.trader_ranking.time_period})
-- **累计盈亏 (PnL)**: {pnl_str}
-- **交易量**: {vol_str}
-- **用户名**: {self.trader_ranking.user_name or 'Anonymous'}
-- **认证状态**: {verified_str}
+### Trader Ranking (PnL Leaderboard)
+- **Rank**: {rank_str} (Period: {self.trader_ranking.time_period})
+- **Cumulative PnL**: {pnl_str}
+- **Volume**: {vol_str}
+- **Username**: {self.trader_ranking.user_name or 'Anonymous'}
+- **Verification**: {verified_str}
 """
         else:
             trader_info = """
-### 交易者排名信息
-- 该交易者不在盈利排行榜上（可能是新用户或小额交易者）
+### Trader Ranking
+- This trader is not on the PnL leaderboard (possibly a new user or small trader)
 """
 
         # Format trader history info
         history_info = ""
         if self.trader_history:
             history_info = f"""
-### 交易者历史交易记录
-- **近期交易总数**: {self.trader_history.total_trades} 笔
-- **近期交易总额**: ${self.trader_history.total_volume:,.2f} USDC
-- **平均交易金额**: ${self.trader_history.avg_trade_size:,.2f} USDC
-- **大额交易次数** (≥$5000): {self.trader_history.large_trades_count} 笔
-- **活跃市场**: {', '.join(self.trader_history.recent_markets[:5]) if self.trader_history.recent_markets else 'N/A'}
+### Trader History
+- **Recent Trades**: {self.trader_history.total_trades}
+- **Recent Volume**: ${self.trader_history.total_volume:,.2f} USDC
+- **Avg Trade Size**: ${self.trader_history.avg_trade_size:,.2f} USDC
+- **Large Trades** (>=$5000): {self.trader_history.large_trades_count}
+- **Active Markets**: {', '.join(self.trader_history.recent_markets[:5]) if self.trader_history.recent_markets else 'N/A'}
 """
             # Add recent large trades details
             if self.trader_history.recent_trades:
-                history_info += "\n**近期大额交易明细**:\n"
+                history_info += "\n**Recent Large Trade Details**:\n"
                 for i, t in enumerate(self.trader_history.recent_trades[:5], 1):
                     history_info += f"  {i}. {t.get('side', 'N/A')} ${t.get('usdc_size', 0):,.2f} @ {t.get('price', 0):.4f} - {t.get('title', 'N/A')[:40]}...\n"
         else:
             history_info = """
-### 交易者历史交易记录
-- 无法获取该交易者的历史交易记录
+### Trader History
+- Unable to retrieve this trader's trading history
 """
 
         return f"""
-## 异常交易检测
+## Anomalous Trade Detection
 
-### 交易信息
-- 交易方向: BUY {self.trade.outcome} Token ({'看多，认为事件会发生' if self.trade.outcome == 'Yes' else '看空，认为事件不会发生'})
-- 交易金额: ${self.trade.usdc_size:,.2f} USDC
-- 买入价格: {self.trade.price:.4f}（赔率约 {1/self.trade.price:.1f}x）
-- 交易时间: {datetime.fromtimestamp(self.trade.timestamp).strftime('%Y-%m-%d %H:%M:%S')}
-- 交易者钱包: {self.trade.proxy_wallet or 'Unknown'}
+### Trade Information
+- Direction: BUY {self.trade.outcome} Token ({'Bullish — expects the event to occur' if self.trade.outcome == 'Yes' else 'Bearish — expects the event will not occur'})
+- Trade Size: ${self.trade.usdc_size:,.2f} USDC
+- Entry Price: {self.trade.price:.4f} (Odds ~{1/self.trade.price:.1f}x)
+- Trade Time: {datetime.fromtimestamp(self.trade.timestamp).strftime('%Y-%m-%d %H:%M:%S')}
+- Trader Wallet: {self.trade.proxy_wallet or 'Unknown'}
 {trader_info}{history_info}
 {self.format_event_positions()}
 
 {self.format_top_traders()}
 
-### 市场信息
-- 市场问题: {self.market_question}
-- 市场描述: {self.market_description or 'N/A'}
-- 可能结果: {', '.join(self.market_outcomes)}
-- 当前价格: {', '.join([f'{o}: {p:.4f}' for o, p in zip(self.market_outcomes, self.market_outcome_prices)])}
+### Market Information
+- Market Question: {self.market_question}
+- Market Description: {self.market_description or 'N/A'}
+- Possible Outcomes: {', '.join(self.market_outcomes)}
+- Current Prices: {', '.join([f'{o}: {p:.4f}' for o, p in zip(self.market_outcomes, self.market_outcome_prices)])}
 
-### 分析要点
-1. 这笔大额交易 (${self.trade.usdc_size:,.2f}) 的方向为 **BUY {self.trade.outcome} Token**，{'表明交易者看多，认为事件会发生' if self.trade.outcome == 'Yes' else '表明交易者看空，认为事件不会发生'}
-2. 买入价格 {self.trade.price:.4f}，赔率约 {1/self.trade.price:.1f}x
-3. **交易者排名和历史交易是判断信息不对称可信度的重要参考**
-4. **注意分析该鲸鱼在同一事件下的其他持仓** — 如果持有反向仓位可能是对冲策略
-5. **参考该市场 Top 多空持仓者的阵营** — 精英交易者集中在哪一方
+### Key Analysis Points
+1. This large trade (${self.trade.usdc_size:,.2f}) is **BUY {self.trade.outcome} Token**, {'indicating the trader is Bullish and expects the event to occur' if self.trade.outcome == 'Yes' else 'indicating the trader is Bearish and expects the event will not occur'}
+2. Entry price {self.trade.price:.4f}, odds ~{1/self.trade.price:.1f}x
+3. **Trader ranking and history are key references for assessing information asymmetry credibility**
+4. **Review the whale's other positions under the same event** — opposite positions may indicate a hedging strategy
+5. **Check the top bulls and bears on this market** — which side has the elite traders
 """

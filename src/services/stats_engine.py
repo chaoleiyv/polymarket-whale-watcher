@@ -56,16 +56,16 @@ class StatsEngine:
             return ""
 
         lines = [
-            "## 信号历史战绩",
+            "## Signal Performance History",
             "",
-            f"| 指标 | 值 |",
-            f"|------|-----|",
-            f"| 总信号数 | {stats['total_signals']} |",
-            f"| 已验证 | {stats['resolved']} |",
-            f"| 正确 | {stats['correct']} |",
-            f"| 胜率 | **{stats['win_rate']:.1%}** |",
-            f"| 平均ROI | **{stats['avg_roi']:+.1%}** |",
-            f"| 理论总PnL | **{stats['total_theoretical_pnl']:+.2f}x** |",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Total Signals | {stats['total_signals']} |",
+            f"| Resolved | {stats['resolved']} |",
+            f"| Correct | {stats['correct']} |",
+            f"| Win Rate | **{stats['win_rate']:.1%}** |",
+            f"| Avg ROI | **{stats['avg_roi']:+.1%}** |",
+            f"| Total Theoretical PnL | **{stats['total_theoretical_pnl']:+.2f}x** |",
             "",
         ]
 
@@ -73,10 +73,10 @@ class StatsEngine:
         has_resolved_tiers = any(t["resolved"] > 0 for t in tier_stats)
         if has_resolved_tiers:
             lines.extend([
-                "### 按信号可信度分层",
+                "### By Signal Confidence Tier",
                 "",
-                "| 可信度区间 | 信号数 | 已验证 | 胜率 | 平均ROI |",
-                "|-----------|-------|-------|------|---------|",
+                "| Confidence Range | Signals | Resolved | Win Rate | Avg ROI |",
+                "|-----------------|---------|----------|----------|---------|",
             ])
             for t in tier_stats:
                 if t["total"] > 0:
