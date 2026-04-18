@@ -250,9 +250,9 @@ class AnomalyDetector:
 
         # Direction interpretation (only BUY trades, no normalization)
         if trade.outcome == "Yes":
-            direction_meaning = f"交易者买入 Yes Token @ {trade.price:.4f}，看多（认为事件会发生）"
+            direction_meaning = f"Trader bought Yes Token @ {trade.price:.4f} — Bullish (believes event will occur)"
         else:
-            direction_meaning = f"交易者买入 No Token @ {trade.price:.4f}，看空（认为事件不会发生）"
+            direction_meaning = f"Trader bought No Token @ {trade.price:.4f} — Bearish (believes event will NOT occur)"
 
         # Buy price directly reflects taker's conviction — lower price = higher odds bet
         implied_prob = trade.price
@@ -305,50 +305,50 @@ class AnomalyDetector:
         # Anomaly breakdown string
         bd = context["anomaly_breakdown"]
         breakdown_str = (
-            f"  绝对金额: {bd.get('size_abs', 0):.2f} | "
-            f"相对市场: {bd.get('size_relative', 0):.2f} | "
-            f"价格不确定性: {bd.get('price_uncertainty', 0):.2f} | "
-            f"交易时间: {bd.get('time_of_day', 0):.2f} | "
-            f"交易者偏离: {bd.get('trader_deviation', 0):.2f} | "
-            f"聚集信号: {bd.get('cluster', 0):.2f}"
+            f"  Absolute size: {bd.get('size_abs', 0):.2f} | "
+            f"Relative to market: {bd.get('size_relative', 0):.2f} | "
+            f"Price uncertainty: {bd.get('price_uncertainty', 0):.2f} | "
+            f"Time of day: {bd.get('time_of_day', 0):.2f} | "
+            f"Trader deviation: {bd.get('trader_deviation', 0):.2f} | "
+            f"Cluster signal: {bd.get('cluster', 0):.2f}"
         )
 
         return f"""
-## 大额交易异常检测报告
+## Whale Trade Anomaly Detection Report
 
-### 交易详情
-- **交易金额**: ${context['trade_size_usd']:,.2f} USDC
-- **交易方向**: BUY {context['trade_outcome']} Token ({'看多' if context['trade_outcome'] == 'Yes' else '看空'})
-- **买入价格**: {context['trade_price']:.4f}（赔率约 {1/context['trade_price']:.1f}x）
-- **交易时间**: {datetime.fromtimestamp(trade.timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}
-- **交易者钱包**: {trade.proxy_wallet or 'Unknown'}
+### Trade Details
+- **Trade amount**: ${context['trade_size_usd']:,.2f} USDC
+- **Trade direction**: BUY {context['trade_outcome']} Token ({'Bullish' if context['trade_outcome'] == 'Yes' else 'Bearish'})
+- **Buy price**: {context['trade_price']:.4f} (~{1/context['trade_price']:.1f}x odds)
+- **Trade time**: {datetime.fromtimestamp(trade.timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Trader wallet**: {trade.proxy_wallet or 'Unknown'}
 
-### 异常评分
-- **综合评分**: {context['anomaly_score']:.2f}/1.00
-- **评分分解**:
+### Anomaly Score
+- **Overall score**: {context['anomaly_score']:.2f}/1.00
+- **Score breakdown**:
 {breakdown_str}
 
-### 交易解读
-- **方向含义**: {context['direction_meaning']}
+### Trade Interpretation
+- **Direction**: {context['direction_meaning']}
 {trader_profile_str}
 
-### 市场信息
-- **市场问题**: {context['market_question']}
-- **市场描述**: {whale_trade.market_description or 'N/A'}
-- **市场状态**: {context['market_state']}
-- **当前赔率**:
+### Market Information
+- **Market question**: {context['market_question']}
+- **Market description**: {whale_trade.market_description or 'N/A'}
+- **Market state**: {context['market_state']}
+- **Current odds**:
 {prices_str}
 
 {whale_trade.format_event_positions()}
 
 {whale_trade.format_top_traders()}
 
-### 分析要点
-1. 这是一笔 ${context['trade_size_usd']:,.2f} 的大额交易，方向为 **BUY {context['trade_outcome']} Token**
+### Analysis Points
+1. This is a ${context['trade_size_usd']:,.2f} large trade, direction: **BUY {context['trade_outcome']} Token**
 2. {context['direction_meaning']}
-3. **重点分析上方的 Trader Profile JSON，综合排名、PnL、交易行为和近期交易记录判断交易者可信度**
-4. **注意分析该鲸鱼在同一事件下的其他持仓** — 如果持有反向仓位可能是对冲策略
-5. **参考该市场 Top 多空持仓者的阵营** — 高排名交易者集中在哪一方
+3. **Focus on the Trader Profile JSON above — assess trader credibility from ranking, PnL, trading behavior, and recent trades**
+4. **Analyze the whale's positions in other markets under the same event** — opposing positions may indicate hedging
+5. **Reference the market's Top long/short holders** — which side has the concentration of high-ranked traders
 
-请分析这笔交易的信息不对称可能性。
+Please analyze the information asymmetry likelihood of this trade.
 """

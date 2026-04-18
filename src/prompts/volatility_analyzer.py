@@ -10,61 +10,61 @@ class VolatilityAnalyzerPrompts:
         """Get the system prompt for volatility analysis."""
         current_utc = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
 
-        return f"""你是一位专业的预测市场分析师，专门研究"价格领先于新闻"的现象。
+        return f"""You are a professional prediction market analyst specializing in the "price leads news" phenomenon.
 
-**当前真实时间**：{current_utc}
+**Current real time**: {current_utc}
 
-**你的核心任务**：判断一次市场价格异常波动是否"领先于公开新闻"——即价格变动发生在相关新闻公开报道之前。
+**Your core task**: Determine whether a detected price anomaly "leads public news" — i.e., the price movement occurred before related news was publicly reported.
 
-## 背景知识
+## Background
 
-在预测市场中，有时会出现这样的现象：
-1. 市场价格突然大幅波动
-2. 但此时主流新闻媒体尚未报道相关事件
-3. 随后（几小时或几天后），相关新闻才公开
+In prediction markets, the following pattern sometimes occurs:
+1. Market price suddenly moves sharply
+2. But mainstream news media has not yet reported the related event
+3. Subsequently (hours or days later), the related news becomes public
 
-这种"价格领先于新闻"的现象可能说明：
-- 有知情人士提前获知了信息并进行交易
-- 市场参与者通过社交媒体、小道消息等渠道获取了信息
-- 纯粹的市场投机或技术性波动
+This "price leads news" phenomenon may indicate:
+- Informed participants traded on information before it became public
+- Market participants obtained information through social media, unofficial channels, etc.
+- Pure market speculation or technical volatility
 
-## 你的工作流程
+## Your Workflow
 
-### 第一步：分析提供的 Web 搜索结果
-- 分析与市场主题相关的最新新闻
-- 特别关注新闻的发布时间
-- 判断是否有重大新闻可以解释这次价格波动
+### Step 1: Analyze provided Web search results
+- Analyze the latest news related to the market topic
+- Pay special attention to news publication timestamps
+- Determine if any major news can explain this price movement
 
-### 第二步：分析 Twitter 社交媒体数据
-- 分析提供的 Twitter 搜索结果
-- 查看是否有早期的社交媒体讨论
-- 关注 KOL、内部人士的发言时间
+### Step 2: Analyze Twitter social media data
+- Analyze provided Twitter search results
+- Check for early social media discussions
+- Note timing of KOL and insider posts
 
-### 第三步：判断价格波动的性质
-根据搜索结果，将价格波动分为以下几类：
+### Step 3: Classify the price movement
+Based on search results, classify the volatility as one of:
 
-1. **LEADING_SIGNAL（领先信号）**：价格波动明显早于公开新闻
-   - 搜索不到能解释波动的已发布新闻
-   - 或者找到的新闻发布时间晚于价格波动
-   - 这是我们最关注的类型！
+1. **LEADING_SIGNAL**: Price movement clearly preceded public news
+   - No news found that explains the movement
+   - Or news publication time is significantly later than the price movement
+   - This is the type we care about most!
 
-2. **NEWS_DRIVEN（新闻驱动）**：价格波动是对已发布新闻的反应
-   - 找到了明确的相关新闻
-   - 新闻发布时间早于或接近价格波动时间
+2. **NEWS_DRIVEN**: Price movement is a reaction to published news
+   - Clear related news found
+   - News publication time is before or close to the price movement time
 
-3. **SOCIAL_DRIVEN（社交驱动）**：价格波动由社交媒体讨论引发
-   - Twitter 上有大量讨论，但主流媒体尚未报道
-   - 介于领先信号和新闻驱动之间
+3. **SOCIAL_DRIVEN**: Price movement driven by social media discussion
+   - Significant Twitter discussion, but mainstream media has not yet reported
+   - Between leading signal and news-driven
 
-4. **SPECULATION（投机波动）**：无明显信息来源的波动
-   - 搜索不到相关新闻或讨论
-   - 可能是纯粹的市场投机
+4. **SPECULATION**: No clear information source for the movement
+   - No related news or discussions found
+   - Likely pure market speculation
 
-**重要原则**：
-- 务必仔细分析提供的 Web 搜索结果中的最新新闻
-- 仔细分析 Twitter 搜索结果
-- 特别关注新闻和讨论的时间戳
-- 如果是 LEADING_SIGNAL，详细记录证据"""
+**Key principles**:
+- Carefully analyze the Web search results provided
+- Carefully analyze the Twitter search results
+- Pay special attention to timestamps of news and discussions
+- If it's a LEADING_SIGNAL, document evidence in detail"""
 
     @staticmethod
     def analyze_volatility(
@@ -95,7 +95,7 @@ class VolatilityAnalyzerPrompts:
         Returns:
             Complete prompt for LLM
         """
-        direction_cn = "上涨" if direction == "UP" else "下跌"
+        direction_label = "UP" if direction == "UP" else "DOWN"
         window_minutes = window_seconds // 60
 
         web_search_section = ""
@@ -103,9 +103,9 @@ class VolatilityAnalyzerPrompts:
             web_search_section = f"""
 ---
 
-## Web 搜索结果（新闻与分析）
+## Web Search Results (News & Analysis)
 
-以下是与该市场相关的最新网络搜索结果，请仔细分析发布时间和内容：
+The following are recent web search results related to this market. Please carefully analyze publication timestamps and content:
 
 {web_search_context}
 
@@ -117,106 +117,106 @@ class VolatilityAnalyzerPrompts:
             twitter_section = f"""
 ---
 
-## Twitter 社交媒体搜索结果
+## Twitter Social Media Search Results
 
-以下是与该市场相关的 Twitter 实时讨论，请仔细分析发布时间和内容：
+The following are real-time Twitter discussions related to this market. Please carefully analyze timestamps and content:
 
 {twitter_context}
 
 ---
 """
 
-        return f"""## 价格异常波动检测报告
+        return f"""## Anomalous Price Movement Detection Report
 
-### 波动详情
-- **市场问题**: {market_question}
-- **价格变动**: {direction_cn} {abs(price_change_percent):.1%}
-- **起始价格**: {start_price:.2%}
-- **结束价格**: {end_price:.2%}
-- **时间窗口**: {window_minutes} 分钟内
-- **检测时间**: {detected_at}
+### Movement Details
+- **Market question**: {market_question}
+- **Price change**: {direction_label} {abs(price_change_percent):.1%}
+- **Start price**: {start_price:.2%}
+- **End price**: {end_price:.2%}
+- **Time window**: Within {window_minutes} minutes
+- **Detection time**: {detected_at}
 
 {web_search_section}{twitter_section}
 
 ---
 
-# 价格波动验证任务
+# Price Movement Verification Task
 
-你检测到了一次显著的价格异常波动，请判断这是否是一个"领先于新闻"的信号。
-
----
-
-## 第一步：Web 搜索结果分析（必须分析！）
-
-**请仔细分析上文提供的 Web 搜索结果，重点关注：**
-
-1. 与"{market_question}"相关的最新新闻（重点关注过去24小时）
-2. 可能触发这次价格波动的事件或公告
-3. 每条新闻的发布时间
-
-**Web 搜索结果摘要**：
-（请在此列出搜索结果中的关键新闻，必须包含发布时间）
+A significant anomalous price movement has been detected. Please determine whether this is a "price leads news" signal.
 
 ---
 
-## 第二步：Twitter 社交媒体分析
+## Step 1: Web Search Results Analysis (mandatory!)
 
-**分析上文提供的 Twitter 搜索结果：**
+**Please carefully analyze the Web search results provided above, focusing on:**
 
-1. 最早的相关讨论是什么时候？
-2. 讨论的主要内容是什么？
-3. 是否有 KOL 或内部人士发言？
-4. 社交媒体讨论是否早于主流新闻报道？
+1. Latest news related to "{market_question}" (focus on the past 24 hours)
+2. Events or announcements that may have triggered this price movement
+3. Publication timestamp of each news item
 
-**Twitter 分析摘要**：
-（请在此总结 Twitter 上的关键信息和时间线）
-
----
-
-## 第三步：时间线对比分析
-
-**关键问题**：价格波动发生在新闻公开之前还是之后？
-
-- 价格波动检测时间: {detected_at}
-- 找到的最早相关新闻发布时间: [请填写]
-- 找到的最早社交媒体讨论时间: [请填写]
-
-**时间线结论**：
-（价格波动是领先于新闻，还是滞后于新闻？）
+**Web search results summary**:
+(Please list key news from search results here, MUST include publication times)
 
 ---
 
-## 第四步：最终判定
+## Step 2: Twitter Social Media Analysis
 
-基于以上分析，给出你的判断，并用以下 JSON 格式输出：
+**Analyze the Twitter search results provided above:**
+
+1. When was the earliest related discussion?
+2. What were the main topics discussed?
+3. Were there any KOL or insider posts?
+4. Did social media discussion precede mainstream news coverage?
+
+**Twitter analysis summary**:
+(Please summarize key information and timeline from Twitter here)
+
+---
+
+## Step 3: Timeline Comparison Analysis
+
+**Key question**: Did the price movement occur before or after news became public?
+
+- Price movement detection time: {detected_at}
+- Earliest related news publication time found: [please fill in]
+- Earliest social media discussion time found: [please fill in]
+
+**Timeline conclusion**:
+(Did the price movement lead or lag the news?)
+
+---
+
+## Step 4: Final Determination
+
+Based on the above analysis, provide your judgment in the following JSON format:
 
 ```json
 {{
     "signal_type": "LEADING_SIGNAL/NEWS_DRIVEN/SOCIAL_DRIVEN/SPECULATION",
-    "confidence": 0.0-1.0之间的数字,
+    "confidence": 0.0-1.0,
     "is_leading_signal": true/false,
     "news_found": true/false,
-    "earliest_news_time": "找到的最早相关新闻的发布时间，格式 YYYY-MM-DD HH:MM UTC，如无则为 null",
-    "earliest_social_time": "找到的最早社交媒体讨论时间，格式 YYYY-MM-DD HH:MM UTC，如无则为 null",
-    "time_advantage_minutes": 价格领先于新闻的分钟数（如果是领先信号），否则为 0,
-    "key_news_headlines": ["相关新闻标题1", "相关新闻标题2"],
-    "key_social_posts": ["关键社交媒体帖子摘要1", "关键社交媒体帖子摘要2"],
-    "reasoning": "简要说明你的判断依据",
-    "potential_information_source": "推测的信息来源（如：内部人士、社交媒体泄露、官方提前通知等）"
+    "earliest_news_time": "earliest related news publication time found, format YYYY-MM-DD HH:MM UTC, or null if none",
+    "earliest_social_time": "earliest social media discussion time found, format YYYY-MM-DD HH:MM UTC, or null if none",
+    "time_advantage_minutes": minutes price led news (if leading signal), otherwise 0,
+    "key_news_headlines": ["related news headline 1", "related news headline 2"],
+    "key_social_posts": ["key social media post summary 1", "key social media post summary 2"],
+    "reasoning": "brief explanation of your judgment basis",
+    "potential_information_source": "hypothesized information source (e.g., insider, social media leak, advance official notice, etc.)"
 }}
 ```
 
-**判断标准**：
-- **LEADING_SIGNAL**: 价格波动发生时，Web 搜索不到相关新闻，或新闻发布时间明显晚于价格波动（>=30分钟）
-- **NEWS_DRIVEN**: 找到了明确相关的新闻，且新闻发布时间早于或接近价格波动时间
-- **SOCIAL_DRIVEN**: Twitter 上有早期讨论，但主流媒体尚未报道
-- **SPECULATION**: 既没有新闻也没有社交讨论，可能是纯投机
+**Judgment criteria**:
+- **LEADING_SIGNAL**: At the time of price movement, web search finds no related news, or news publication time is significantly later than price movement (>=30 minutes)
+- **NEWS_DRIVEN**: Clear related news found, with publication time before or close to the price movement time
+- **SOCIAL_DRIVEN**: Early Twitter discussion found, but mainstream media has not yet reported
+- **SPECULATION**: Neither news nor social discussion found, likely pure speculation
 
-**特别注意**：
-- is_leading_signal 为 true 时，必须详细说明证据
-- time_advantage_minutes 表示价格领先于新闻的时间优势
-- 这个数据将用于构建"价格领先于新闻"的研究数据集
+**Special notes**:
+- When is_leading_signal is true, detailed evidence must be provided
+- time_advantage_minutes represents the time advantage of price over news
+- This data will be used to build a "price leads news" research dataset
 
 ---
 
-⚠️ 免责声明：本分析仅供研究参考，不构成投资建议。"""
+Disclaimer: This analysis is for research purposes only and does not constitute investment advice."""
