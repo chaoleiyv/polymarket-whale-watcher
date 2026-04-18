@@ -17,7 +17,7 @@ class AnomalyHistoryService:
     Only signals with likelihood >= 0.4 are used as historical context for LLM.
     """
 
-    # Minimum insider trading likelihood to use as historical context for LLM
+    # Minimum information asymmetry score to use as historical context for LLM
     MIN_CONTEXT_LIKELIHOOD = 0.4
 
     def __init__(self, db_path: str = "data/signals.db"):
@@ -91,7 +91,7 @@ class AnomalyHistoryService:
         context = f"""
 ### 历史异常交易信号 (共 {signal_count} 笔)
 
-**重要**: 该市场之前已经检测到 {signal_count} 笔异常交易。请将这些历史信号与当前最新信号一起进行综合分析，统一评估内幕交易可能性。
+**重要**: 该市场之前已经检测到 {signal_count} 笔异常交易。请将这些历史信号与当前最新信号一起进行综合分析，统一评估信息不对称可能性。
 
 """
         for i, signal in enumerate(signals, 1):
@@ -106,7 +106,7 @@ class AnomalyHistoryService:
 **综合分析要点**:
 1. 对比所有信号（历史+当前）的交易方向，分析是否有一致趋势
 2. 对比不同交易者的排名和历史记录，判断"聪明钱"的流向
-3. 如果多个高排名交易者都指向同一方向，内幕交易可能性显著提高
+3. 如果多个高排名交易者都指向同一方向，信息不对称可能性显著提高
 4. 如果信号方向相反，需要分析原因（时间变化、新信息、不同判断）
 5. 考虑时间因素：越近期的信号越有参考价值
 6. 观察交易金额的变化趋势：金额是否在增加？

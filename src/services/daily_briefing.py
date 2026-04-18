@@ -23,7 +23,7 @@ class DailyBriefingGenerator:
     Generates daily briefings summarizing high-value signals.
 
     Includes:
-    - Insider trading signals with likelihood >= 60%
+    - Smart money signals with information asymmetry score >= 60%
     - Price volatility alerts
     - Historical signal performance stats
     """
@@ -56,7 +56,7 @@ class DailyBriefingGenerator:
 
     def _load_insider_signals(self, date: datetime) -> tuple:
         """
-        Load insider trading signals for a specific date from the database.
+        Load smart money signals for a specific date from the database.
 
         First tries to find signals with likelihood >= 60%.
         If none found, falls back to the top 5 by likelihood.
@@ -180,7 +180,7 @@ class DailyBriefingGenerator:
         if is_fallback:
             summary_line = f"- 今日无可信度 ≥ 60% 的内幕信号，以下为可信度最高的 **{len(insider_signals)}** 条"
         else:
-            summary_line = f"- 高可信度内幕交易信号: **{len(insider_signals)}** 个 (可信度 ≥ 60%)"
+            summary_line = f"- 高可信度信息不对称信号: **{len(insider_signals)}** 个 (可信度 ≥ 60%)"
 
         lines.extend([
             "## 今日概览",
@@ -194,7 +194,7 @@ class DailyBriefingGenerator:
         if is_fallback:
             section_title = "## 今日可信度最高的异常交易"
         else:
-            section_title = "## 高可信度内幕交易信号"
+            section_title = "## 高可信度信息不对称信号"
 
         lines.extend([
             "---",

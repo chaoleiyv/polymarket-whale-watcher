@@ -234,7 +234,7 @@ class WhaleTrade(BaseModel):
 ### 分析要点
 1. 这笔大额交易 (${self.trade.usdc_size:,.2f}) 的方向为 **BUY {self.trade.outcome} Token**，{'表明交易者看多，认为事件会发生' if self.trade.outcome == 'Yes' else '表明交易者看空，认为事件不会发生'}
 2. 买入价格 {self.trade.price:.4f}，赔率约 {1/self.trade.price:.1f}x
-3. **交易者排名和历史交易是判断内幕交易可信度的重要参考**
+3. **交易者排名和历史交易是判断信息不对称可信度的重要参考**
 4. **注意分析该鲸鱼在同一事件下的其他持仓** — 如果持有反向仓位可能是对冲策略
 5. **参考该市场 Top 多空持仓者的阵营** — 精英交易者集中在哪一方
 """

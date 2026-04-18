@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class MarketFetcher:
     """Fetches and manages trending markets from Polymarket Gamma API."""
 
-    # Short-term price prediction markets to filter out (no insider trading value)
+    # Short-term price prediction markets to filter out (no signal value)
     # Matches patterns like "Bitcoin Up or Down - March 27, 2:00AM-2:15AM ET"
     SHORT_TERM_PRICE_KEYWORDS = [
         "up or down",       # "Bitcoin Up or Down - March 27, 2:00AM"
@@ -24,7 +24,7 @@ class MarketFetcher:
         "green or red",     # daily candle color
     ]
 
-    # Temperature/weather markets (no insider trading value)
+    # Temperature/weather markets (no signal value)
     WEATHER_KEYWORDS = [
         "highest temperature",
         "lowest temperature",

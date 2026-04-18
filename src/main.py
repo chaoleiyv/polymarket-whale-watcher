@@ -156,7 +156,7 @@ class WhaleWatcher:
         logger.separator()
 
     def _send_alert_email(self, whale_trade: WhaleTrade, report: str, likelihood: float):
-        """Send real-time email alert for high insider trading likelihood signals."""
+        """Send real-time email alert for high information asymmetry signals."""
         settings = get_settings()
         if not settings.email_enabled or not settings.email_sender or not settings.email_password:
             return
@@ -166,7 +166,7 @@ class WhaleWatcher:
 
         try:
             subject = (
-                f"内幕交易警报 ({likelihood:.0%}) — "
+                f"异常交易警报 ({likelihood:.0%}) — "
                 f"BUY {trade.outcome} @ {trade.price:.4f} "
                 f"${trade.usdc_size:,.0f} — {whale_trade.market_question[:50]}"
             )
