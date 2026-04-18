@@ -47,7 +47,7 @@ Copy `.env.example` to `.env` and configure:
 - `ETHERSCAN_API_KEY` — On-chain data
 - `EMAIL_*` — Email alert settings
 - `MIN_TRADE_SIZE_USD` — Minimum trade size (default: 1000)
-- `MIN_PRICE` / `MAX_PRICE` — Price range filter (default: 0.2-0.8)
+- `MIN_PRICE` / `MAX_PRICE` — Price range filter (default: 0-0.7)
 
 ## Commands
 
@@ -183,7 +183,7 @@ When a whale trade triggers:
 - Trade execution disabled by default (`ENABLE_TRADE_EXECUTION=false`)
 - Position size capped at 20% of balance if enabled
 - Minimum 60% confidence threshold for execution
-- Price range filter avoids obvious outcomes (0.2-0.8)
+- Price range filter avoids obvious outcomes (0-0.7)
 - All decisions logged for audit trail
 - Rate limiting on all external APIs
 
