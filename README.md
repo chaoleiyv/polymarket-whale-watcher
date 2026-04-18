@@ -2,6 +2,82 @@
 
 AI-powered whale trade surveillance and analysis system for Polymarket prediction markets. Combines real-time monitoring, multi-dimensional anomaly detection, LLM-driven investigation with 14 autonomous tools, and signal accuracy tracking.
 
+## Demo
+
+<details>
+<summary><b>Terminal Output</b> — Real-time whale detection and LLM analysis</summary>
+
+```
+╭──────────────────────────────────────────────────────────╮
+│              🐋 Polymarket Whale Watcher                 │
+│                                                          │
+│  Markets Monitored:  50                                  │
+│  Polling Interval:   15s                                 │
+│  Min Trade Size:     $1,000                              │
+│  Price Range:        0 - 0.7                             │
+╰──────────────────────────────────────────────────────────╯
+
+[14:22:51] 🐋 WHALE DETECTED on "Will MegaETH launch a token by June 30, 2026?"
+           BUY Yes @ 0.4200 | $92,336 USDC | Wallet: 0x7a3b...f91e
+           Anomaly Score: 0.78/1.00
+
+[14:22:53] 🤖 LLM Analysis started (model: gemini-3-flash-preview)
+           → Tool call: search_web("MegaETH token launch date 2026")
+           → Tool call: search_twitter("MegaETH $METH token TGE")
+           → Tool call: get_protocol_tvl("megaeth")
+           → Tool call: get_contract_info("0x4f9b...2a1c")
+           → Tool call: search_telegram("MegaETH launch")
+
+[14:23:07] ✅ Analysis complete
+           Information Asymmetry Score: 0.72 (HIGH)
+           Recommendation: BUY Yes | Confidence: 0.75
+           Report saved: reports/20260415/...
+
+[15:00:00] 📊 Resolution check: 3 markets resolved
+           → "EdgeX FDV above 400M" resolved YES — Signal CORRECT (ROI: +142%)
+           → "Will Trump talk to Rutte" resolved NO — Signal INCORRECT
+           → "Over 9M committed to P2P" resolved YES — Signal CORRECT (ROI: +67%)
+```
+
+See full example: [docs/examples/sample_terminal.txt](docs/examples/sample_terminal.txt)
+</details>
+
+<details>
+<summary><b>Analysis Report</b> — LLM investigation with tool-use</summary>
+
+Each whale trade generates a detailed markdown report:
+
+- **Trade details** — amount, direction, price, trader wallet
+- **Trader profile** — rank, PnL, history, recent trades
+- **LLM investigation** — 5 autonomous tool calls (web, Twitter, Telegram, on-chain, DeFi)
+- **Information asymmetry assessment** — score, evidence, reasoning
+
+Example findings:
+> *"New ERC-20 contract deployed by MegaETH deployer wallet 6 hours before trade — not yet publicly announced. KOL tweets about insider knowledge preceded the trade by ~3 hours."*
+>
+> **Information Asymmetry Score: 0.72** | Trader Credibility: HIGH
+
+See full example: [docs/examples/sample_report.md](docs/examples/sample_report.md)
+</details>
+
+<details>
+<summary><b>Daily Briefing</b> — Automated intelligence summary</summary>
+
+Daily briefings include:
+- High-confidence signals with analysis
+- Price volatility alerts
+- Historical signal performance (win rate, ROI by confidence tier)
+
+Example stats:
+| Metric | Value |
+|--------|-------|
+| Win Rate | **63.5%** |
+| Avg ROI | **+28.3%** |
+| Signals with IAS >= 60% | 3 today |
+
+See full example: [docs/examples/sample_briefing.md](docs/examples/sample_briefing.md)
+</details>
+
 ## Features
 
 - **Real-Time Monitoring** — Parallel per-market polling of 50+ trending markets

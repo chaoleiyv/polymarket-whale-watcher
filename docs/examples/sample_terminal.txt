@@ -1,0 +1,54 @@
+$ python -m src.main run
+
+╭──────────────────────────────────────────────────────────╮
+│              🐋 Polymarket Whale Watcher                 │
+│                                                          │
+│  Markets Monitored:  50                                  │
+│  Polling Interval:   15s                                 │
+│  Min Trade Size:     $1,000                              │
+│  Price Range:        0 - 0.7                             │
+╰──────────────────────────────────────────────────────────╯
+
+[14:22:41] 🔄 Refreshing trending markets... Found 50 active markets
+[14:22:43] 👀 Monitoring: Will MegaETH launch a token by June 30, 2026?
+[14:22:43] 👀 Monitoring: US forces enter Iran by April 30
+[14:22:43] 👀 Monitoring: Will the next Prime Minister of Hungary be Viktor Orban?
+           ... (47 more markets)
+
+[14:22:51] 🐋 WHALE DETECTED on "Will MegaETH launch a token by June 30, 2026?"
+           BUY Yes @ 0.4200 | $92,336 USDC | Wallet: 0x7a3b...f91e
+           Anomaly Score: 0.78/1.00
+
+[14:22:52] 🔍 Analyzing whale trade...
+           → Fetching trader ranking... Rank #47 (PnL: $284,521)
+           → Fetching trader history... 156 recent trades
+           → Fetching event positions... 3 related markets
+           → Fetching market top traders... 5 bulls, 5 bears
+
+[14:22:53] 🤖 LLM Analysis started (model: gemini-3-flash-preview)
+           → Tool call: search_web("MegaETH token launch date 2026")
+           → Tool call: search_twitter("MegaETH $METH token TGE")
+           → Tool call: get_protocol_tvl("megaeth")
+           → Tool call: get_contract_info("0x4f9b...2a1c")
+           → Tool call: search_telegram("MegaETH launch")
+
+[14:23:07] ✅ Analysis complete
+           Information Asymmetry Score: 0.72 (HIGH)
+           Recommendation: BUY Yes | Confidence: 0.75
+           Report saved: reports/20260415/20260415_142307_BUY_92336USD_MegaETH_token.md
+
+[14:23:07] 📧 Email alert sent (IAS >= 60%)
+
+[14:23:15] 🐋 WHALE DETECTED on "US forces enter Iran by April 30"
+           BUY Yes @ 0.3100 | $46,500 USDC | Wallet: 0x2c8e...a4d2
+           Anomaly Score: 0.71/1.00
+
+[14:23:16] 🔍 Analyzing whale trade...
+           ...
+
+[14:37:41] 🔄 Refreshing trending markets... Found 48 active markets (2 resolved)
+
+[15:00:00] 📊 Resolution check: 3 markets resolved since last check
+           → "EdgeX FDV above 400M" resolved YES — Signal was CORRECT (ROI: +142%)
+           → "Will Trump talk to Rutte" resolved NO — Signal was INCORRECT
+           → "Over 9M committed to P2P" resolved YES — Signal was CORRECT (ROI: +67%)
