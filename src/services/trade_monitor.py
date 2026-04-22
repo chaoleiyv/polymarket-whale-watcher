@@ -158,7 +158,7 @@ class TradeMonitor:
         logger.info(f"Now monitoring {len(self._monitored_markets)} markets")
 
     # ================================================================
-    # Internal API: fetch trades
+    # Trade fetching: dispatches to internal or official API
     # ================================================================
 
     _MAX_RETRIES = 3
@@ -166,7 +166,171 @@ class TradeMonitor:
 
     async def fetch_market_trades(self, market_id: str) -> List[TradeActivity]:
         """
-        Fetch recent taker trades for a market using the /flows API.
+        Fetch recent trades for a market. Dispatches to internal or official API
+        based on TRADE_API_MODE setting.
+        """
+        if self.settings.trade_api_mode == "internal":
+            return await self._fetch_trades_internal(market_id)
+        else:
+            return await self._fetch_trades_official(market_id)
+
+    # ================================================================
+    # Official Polymarket data-api: fetch trades
+    # ================================================================
+
+    async def _fetch_trades_official(self, market_id: str) -> List[TradeActivity]:
+        """
+        Fetch recent trades using the official Polymarket data-api /trades endpoint.
+
+        The official API returns trades with fields:
+        - id, taker_order_id, market, asset, side, size, price, status
+        - match_time, transaction_hash, outcome, bucket_index, owner, type
+        """
+        try:
+            market = self._monitored_markets.get(market_id)
+            if not market:
+                return []
+
+            # The official /trades endpoint uses condition_id as the "market" param
+            condition_id = market.condition_id
+            if not condition_id:
+                return []
+
+            last_ts = self._market_last_ts.get(market_id)
+
+            params: Dict[str, object] = {
+                "market": condition_id,
+                "limit": 50 if last_ts is None else 500,
+            }
+
+            # Incremental polling: only fetch trades after last seen timestamp
+            if last_ts is not None:
+                params["after"] = last_ts + 1
+
+            sem = self._api_sem or asyncio.Semaphore(20)
+            last_err: Optional[Exception] = None
+            async with sem:
+                for attempt in range(self._MAX_RETRIES):
+                    try:
+                        async with self._api_lock:
+                            now = _time.monotonic()
+                            wait = self._api_global_interval - (now - self._api_last_request)
+                            if wait > 0:
+                                await asyncio.sleep(wait)
+                            self._api_last_request = _time.monotonic()
+
+                        response = await self._client.get(
+                            f"{self.data_api_url}/trades", params=params,
+                        )
+                        response.raise_for_status()
+                        break
+                    except httpx.HTTPStatusError as e:
+                        if e.response.status_code in (502, 503, 504) and attempt < self._MAX_RETRIES - 1:
+                            delay = self._RETRY_BACKOFF[attempt]
+                            logger.debug(
+                                f"Official API {e.response.status_code} for {market_id} "
+                                f"(attempt {attempt + 1}/{self._MAX_RETRIES}), "
+                                f"retrying in {delay}s"
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise
+                    except httpx.HTTPError as e:
+                        last_err = e
+                        if attempt < self._MAX_RETRIES - 1:
+                            delay = self._RETRY_BACKOFF[attempt]
+                            logger.debug(
+                                f"Official API retry for {market_id} "
+                                f"(attempt {attempt + 1}/{self._MAX_RETRIES}): "
+                                f"{type(e).__name__}, retrying in {delay}s"
+                            )
+                            await asyncio.sleep(delay)
+                        else:
+                            logger.warning(
+                                f"Official API connection error for {market_id} "
+                                f"(attempt {attempt + 1}/{self._MAX_RETRIES}, giving up): "
+                                f"{type(e).__name__}: {e}"
+                            )
+                            return []
+                else:
+                    return []
+
+            data = response.json()
+            if not data:
+                return []
+
+            activities = []
+            max_ts = last_ts or 0
+
+            for item in data:
+                try:
+                    side = item.get("side", "").upper()
+
+                    # Only track BUY trades (new positions)
+                    if side != "BUY":
+                        continue
+
+                    size = float(item.get("size", 0) or 0)
+                    price = float(item.get("price", 0) or 0)
+                    usdc_size = size * price  # Official API: USDC value = tokens * price
+
+                    outcome = item.get("outcome", "Yes")
+                    outcome_index = int(item.get("outcomeIndex", 0 if outcome == "Yes" else 1))
+
+                    # Timestamp is epoch seconds in the official API
+                    ts = int(item.get("timestamp", 0) or 0)
+                    if ts == 0:
+                        ts = int(_time.time())
+
+                    if ts > max_ts:
+                        max_ts = ts
+
+                    tx_hash = item.get("transactionHash", "")
+
+                    activity = TradeActivity(
+                        transaction_hash=tx_hash,
+                        timestamp=ts,
+                        condition_id=item.get("conditionId", condition_id),
+                        asset=item.get("asset", ""),
+                        side="BUY",
+                        size=size,
+                        usdc_size=usdc_size,
+                        price=price,
+                        outcome=outcome,
+                        outcome_index=outcome_index,
+                        title=item.get("title", ""),
+                        slug=item.get("slug"),
+                        event_slug=item.get("eventSlug"),
+                        proxy_wallet=item.get("proxyWallet"),
+                        name=item.get("name") or item.get("pseudonym"),
+                    )
+                    activities.append(activity)
+                except Exception as e:
+                    logger.debug(f"Failed to parse official API trade: {e}")
+                    continue
+
+            if max_ts > 0:
+                self._market_last_ts[market_id] = max_ts
+
+            return activities
+
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                f"Official trades API HTTP {e.response.status_code} for {market_id}: "
+                f"{e.response.text[:200]}"
+            )
+            return []
+        except Exception as e:
+            logger.warning(f"Error fetching official trades for {market_id}: {type(e).__name__}: {e}")
+            return []
+
+    # ================================================================
+    # Internal API: fetch trades
+    # ================================================================
+
+    async def _fetch_trades_internal(self, market_id: str) -> List[TradeActivity]:
+        """
+        Fetch recent taker trades for a market using the internal /flows API.
 
         /flows returns one record per taker per transaction (already aggregated
         across maker fills), with accurate usd_amount and real execution price.

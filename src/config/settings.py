@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
     llm_base_url: str = Field(default="http://apicz.boyuerichdata.com/v1/", alias="LLM_BASE_URL")
 
-    # Internal trade data API
+    # Trade data API mode: "internal" (private API) or "official" (Polymarket data-api)
+    trade_api_mode: str = Field(default="official", alias="TRADE_API_MODE")
+
+    # Internal trade data API (only used when TRADE_API_MODE=internal)
     internal_api_url: str = Field(default="http://103.197.25.170:18088", alias="INTERNAL_API_URL")
     internal_api_key: str = Field(default="", alias="INTERNAL_API_KEY")
 

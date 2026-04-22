@@ -1,0 +1,13 @@
+venv/
+.env
+.git/
+__pycache__/
+*.pyc
+data/
+reports/
+daily_briefings/
+leading_signals/
+price_volatility/
+anomaly_signals/
+*.db
+*.json.bak
